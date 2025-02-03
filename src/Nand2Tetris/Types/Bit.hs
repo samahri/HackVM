@@ -1,0 +1,24 @@
+module Nand2Tetris.Types.Bit(
+    Bit(..)
+) where
+
+import CorePrelude(Show, String, Eq, Enum, Bounded, fromEnum, toEnum, minBound, maxBound)
+import System.Random (Random, randomR, random)
+import BasicPrelude(show)
+
+data Bit = Zero | One deriving (Eq, Enum, Bounded)
+
+instance Show Bit where
+    show :: Bit -> String
+    show One = "1"
+    show Zero = "0"
+
+instance Random Bit where
+    -- randomR :: RandomGen g => (Bit, Bit) -> g -> (a, g) 
+    randomR (lo, hi) gen = 
+        let (n, gen') = randomR (fromEnum lo, fromEnum hi) gen
+        in (toEnum n, gen')
+
+    random gen = 
+        let (n, gen') = randomR (fromEnum (minBound :: Bit), fromEnum (maxBound :: Bit)) gen
+        in (toEnum n, gen')

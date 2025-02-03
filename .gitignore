@@ -1,0 +1,8 @@
+.stack-work/
+*~
+/dist-newstyle
+*.swp
+*.swo
+*.pdf
+playground.hs
+*.txt
