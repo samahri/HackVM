@@ -14,12 +14,12 @@ module Nand2Tetris.Memory (
 
 import Nand2Tetris.Types.Bit(Bit(..))
 import Nand2Tetris.Types.HackWord16
-import Nand2Tetris.Gates (mux, mux4Way16, mux16, dMux8Way, dMux8Way16)
+import Nand2Tetris.Gates (mux, mux4Way16, mux16, dMux8Way, dMux8Way16, mux8Way16)
 import Nand2Tetris.Chips (inc16)
 import BasicPrelude (length, (==), ($), pure, (<$>), replicate, fst, fmap, (&&), (<>), Int, (^), (+), foldr, (.), undefined)
 import Control.Exception (assert)
 import Control.Monad.Trans.State.Strict (State, get, put, runState, execState)
-import Data.List (zipWith, (!!), splitAt, unzip)
+import Data.List (zipWith, (!!), splitAt, unzip, reverse)
 
 type Input = Bit
 type Output = Bit
@@ -72,36 +72,33 @@ register input16 load = do
 type Address = (Bit, Bit, Bit)
 type Ram8State = [MemoryState] -- length is 8 word16
 
-type RAMOutput = State Ram8State Output16
+type RAM8Output = State Ram8State Output16
 
-ram8 :: Input16 -> Address -> Load -> RAMOutput
+ram8 :: Input16 -> Address -> Load -> RAM8Output
 ram8 input16 addr load = do
     ramState <- get
-    let inputList = tuple8ToList $ dMux8Way16 input16 addr
-        loadArr = tuple8ToList $ dMux8Way load addr
-        registerList = zipWith register inputList loadArr
-        nextCycleOutput = zipWith execState registerList ramState
+    let nextCycleOutput = zipWith execState registerList ramState
     put nextCycleOutput
     pure $ mux8Way16 ramState addr
+    where
+        inputList = tuple8ToList $ dMux8Way16 input16 addr
+        loadArr = tuple8ToList $ dMux8Way load addr
+        registerList = zipWith register inputList loadArr
 
 tuple8ToList :: (a, a, a, a, a, a, a, a) -> [a]
 tuple8ToList (x0, x1, x2, x3, x4, x5, x6, x7) = [x0, x1, x2, x3, x4, x5, x6, x7] 
-
--- mux4Way16 :: (Input16, Input16, Input16, Input16) -> (Sel, Sel) -> Output16
-mux8Way16 :: [Input16] -> Address -> Output16
-mux8Way16 registerList (addr0, addr1, addr2) = assert (length registerList == 8) $ mux16 (mux4Way16 registers0to3 addressTuple, mux4Way16 registers4to7 addressTuple) addr0
-    where
-        addressTuple = (addr1, addr2)
-        (registers0to3, registers4to7) = let (r0to3List, r3to7l) = splitAt 4 registerList in (to4Tuple r0to3List, to4Tuple r3to7l)
-
-        to4Tuple :: [Input16] -> (Input16, Input16, Input16, Input16)
-        to4Tuple [b0, b1, b2, b3] = (b0, b1, b2, b3)
             
--- convertToInt :: [Bit] -> Int
--- convertToInt input = fst (foldr func (0, 0) input)
---     where
---         func :: Bit -> (Int, Int) -> (Int, Int)
---         func b (total, acc) = if b == Zero then (total, acc + 1) else (total + 2^acc, acc + 1)
+-- type Address6Bit = (Bit, Bit, Bit, Bit, Bit, Bit)
+-- type Ram64State = [MemoryState] -- length is 64 word16
+
+-- type RAM64Output = State Ram64State Output16
+
+-- -- implemented using 8 ram8
+-- ram64 :: Input16 -> Address -> Load -> RAM8Output
+-- ram64 input16 addr load = do
+--     ram64State <- get
+
+
 
 type Inc = Bit
 type Reset = Inc

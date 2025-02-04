@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Nand2Tetris.Types.HackWord16 (toHackWord16 
+module Nand2Tetris.Types.HackWord16 (
+    toHackWord16 
    , toList
    , HackWord16
 ) where

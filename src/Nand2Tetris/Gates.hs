@@ -13,7 +13,9 @@ module Nand2Tetris.Gates(
   , dmux
   , or8Way
   , mux4Way16
+  , mux8Way16
   , dMux4Way
+  , dMux4Way16
   , dMux8Way
   , dMux8Way16
 ) where
@@ -22,7 +24,7 @@ import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
 import BasicPrelude ((.), zipWith, length, (==), (&&), foldr1, (<$>), ($))
 import Control.Exception (assert)
-import Data.List (replicate)
+import Data.List (replicate, splitAt, reverse)
 import Data.Tuple (curry)
 
 type Input = Bit
@@ -90,8 +92,8 @@ or16 (input1, input2) = toHackWord16 (zipWith (curry or) inputArr1 inputArr2)
 -- use logic gates
 mux16 :: (Input16, Input16) -> Sel -> Output16
 mux16 (input1, input2) sel = case sel of
-        Zero -> input1
-        One -> input2
+    Zero -> input1
+    One -> input2
 
 or8Way :: [Bit] -> Output
 or8Way inputArr = assert (length inputArr == 8) (foldr1 (curry or) inputArr)
@@ -128,6 +130,15 @@ dMux4Way16 input sel = case sel of
     (One, One) -> (zeros, zeros, zeros, input)
 
 type Bus8Way16 = (Output16, Output16, Output16, Output16, Output16, Output16, Output16, Output16) 
+
+mux8Way16 :: [Input16] -> (Sel, Sel, Sel) -> Output16
+mux8Way16 registerList (addr0, addr1, addr2) = assert (length registerList == 8) $ mux16 (mux4Way16 registers7to4 addressTuple, mux4Way16 registers3to0 addressTuple) addr0
+    where
+        addressTuple = (addr1, addr2)
+        (registers7to4, registers3to0) = let (r7to4l, r3to0l) = splitAt 4 registerList in (to4Tuple r7to4l, to4Tuple r3to0l)
+
+        to4Tuple :: [Input16] -> (Input16, Input16, Input16, Input16)
+        to4Tuple [b0, b1, b2, b3] = (b0, b1, b2, b3)
 
 dMux8Way16 :: Input16 -> (Sel, Sel, Sel) -> Bus8Way16
 dMux8Way16 input16 (sel0, sel1, sel2) = combine (upper, lower)

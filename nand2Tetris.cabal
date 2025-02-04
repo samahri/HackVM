@@ -72,6 +72,7 @@ test-suite nand2Tetris-test
       Nand2Tetris.GatesSpec
     , Nand2Tetris.ChipsSpec
     , Nand2Tetris.MemorySpec
+    , Nand2Tetris.TestUtil
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -fno-ignore-asserts

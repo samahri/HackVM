@@ -5,19 +5,13 @@ module Nand2Tetris.MemorySpec (
 
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
+import Nand2Tetris.TestUtil
 import Control.Monad.Trans.State.Strict (evalState)
-import BasicPrelude (($), (<$>), (>>), IO, Int, (^), (+), (==), foldr, fst, mod)
+import BasicPrelude (($), (<$>), (>>), IO, Int, (^), (+), (==), foldr, fst, mod, pure)
 import Nand2Tetris.Memory
 import Test.Hspec
 import Data.List (replicate)
-import Control.Monad (replicateM_, replicateM)
-import System.Random (randomIO)
-
-randomBit :: IO Bit
-randomBit = randomIO
-
-random16Bits :: IO HackWord16
-random16Bits = toHackWord16 <$> replicateM 16 randomBit
+import Control.Monad (replicateM_)
 
 spec :: Spec
 spec = do
@@ -54,9 +48,7 @@ spec = do
             evalState (bit bit1 One >> bit inputbit One >> bit bit1 bit2) initialBit `shouldBe` inputbit
 
     context "16-bit register" $ do
-        
-        it "only accepts 16bit input" pending
-        it "load is disabled" $ replicateM_ 40 $ do
+        specify "load is disabled" $ replicateM_ 40 $ do
             inputbits <- random16Bits
             initialBits <- random16Bits
 
@@ -131,19 +123,48 @@ spec = do
 
             outputInt `shouldBe` (inputInt + 2) `mod` 256
     
-    context "RAM8" $ do
-        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
-            inputbits <- random16Bits
-            initialBits <- replicateM 8 random16Bits
+    context "RAM8" $  do
+        let getAddress :: IO (Bit, Bit, Bit)
+            getAddress = do
+                addrBit0 <- randomBit
+                addrBit1 <- randomBit
+                addrBit2 <- randomBit
+                -- reserve (Zero, One, Zero) to prevent addr2 from being overritten
+                if 
+                    (addrBit0, addrBit1, addrBit2) == (Zero, One, Zero) 
+                    then getAddress 
+                    else pure (addrBit0, addrBit1, addrBit2)
 
-            addrBit0 <- randomBit
-            addrBit1 <- randomBit
-            addrBit2 <- randomBit
-            let addr = (addrBit0, addrBit1, addrBit2)
+        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
+            
+            inputbits1 <- random16Bits
+            inputbits2 <- random16Bits
+            inputbits3 <- random16Bits
+
+            initialBits <- replicate 8 <$> random16Bits
+            
+            addr1 <- getAddress
+            addr2 <- getAddress
 
             bits0 <- random16Bits
 
-            evalState (ram8 inputbits addr One  >> ram8 bits0 addr Zero) initialBits `shouldBe` inputbits
+            evalState (ram8 inputbits1 addr1 One  >> ram8 inputbits2 addr2 One  >> ram8 inputbits3 (Zero, One, Zero) One  >> ram8 bits0 addr2 Zero) initialBits `shouldBe` inputbits2
+
+    -- context "RAM64" $ do
+    --     it "writes and reads an 8-bit number" $ do
+    --         inputbits1 <- random16Bits
+    --         inputbits2 <- random16Bits
+    --         inputbits3 <- random16Bits
+
+    --         initialBits <- replicate 8 <$> random16Bits
+            
+    --         addr1 <- getAddress
+    --         addr2 <- getAddress
+
+    --         bits0 <- random16Bits
+
+    --         evalState (ram64 inputbits1 addr1 One  >> ram8 inputbits2 addr2 One  >> ram8 inputbits3 (Zero, One, Zero) One  >> ram8 bits0 addr2 Zero) initialBits `shouldBe` inputbits2
+
 
 convertToInt :: [Bit] -> Int
 convertToInt input = fst (foldr func (0, 0) input) `mod` 256
