@@ -9,9 +9,8 @@ module Nand2Tetris.Chips (
 import Nand2Tetris.Gates
 import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
-import BasicPrelude ((&&), (==), ($), error)
-import Control.Exception (assert)
-import Data.List (reverse, length, replicate)
+import BasicPrelude ((==), ($), error)
+import Data.List (reverse, replicate)
 import Data.List.NonEmpty (head, fromList)
 
 type Input = Bit

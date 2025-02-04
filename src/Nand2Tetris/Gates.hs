@@ -11,6 +11,7 @@ module Nand2Tetris.Gates(
   , mux
   , mux16
   , dmux
+  , dmux16
   , or8Way
   , mux4Way16
   , mux8Way16
@@ -22,9 +23,9 @@ module Nand2Tetris.Gates(
 
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
-import BasicPrelude ((.), zipWith, length, (==), (&&), foldr1, (<$>), ($))
+import BasicPrelude ((.), zipWith, length, (==), foldr1, (<$>), ($), error)
 import Control.Exception (assert)
-import Data.List (replicate, splitAt, reverse)
+import Data.List (replicate, splitAt)
 import Data.Tuple (curry)
 
 type Input = Bit
@@ -139,6 +140,7 @@ mux8Way16 registerList (addr0, addr1, addr2) = assert (length registerList == 8)
 
         to4Tuple :: [Input16] -> (Input16, Input16, Input16, Input16)
         to4Tuple [b0, b1, b2, b3] = (b0, b1, b2, b3)
+        to4Tuple _ = error "undefined"
 
 dMux8Way16 :: Input16 -> (Sel, Sel, Sel) -> Bus8Way16
 dMux8Way16 input16 (sel0, sel1, sel2) = combine (upper, lower)
@@ -149,4 +151,5 @@ dMux8Way16 input16 (sel0, sel1, sel2) = combine (upper, lower)
 combine :: ((a, a, a, a), (a, a, a, a)) -> (a, a, a, a, a, a, a, a)
 combine ((b0, b1, b2, b3), (b4, b5, b6, b7)) = (b0, b1, b2, b3, b4, b5, b6, b7)
 
+zeros :: HackWord16
 zeros = toHackWord16 $ replicate 16 Zero

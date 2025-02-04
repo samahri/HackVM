@@ -7,7 +7,7 @@ import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.TestUtil
 import Control.Monad.Trans.State.Strict (evalState)
-import BasicPrelude (($), (<$>), (>>), IO, Int, (^), (+), (==), foldr, fst, mod, pure)
+import BasicPrelude (($), (<$>), (>>), IO, Int, (^), (+), (==), foldr, fst, mod, pure, (.))
 import Nand2Tetris.Memory
 import Test.Hspec
 import Data.List (replicate)
@@ -141,7 +141,7 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- replicate 8 <$> random16Bits
+            initialBits <- to8Tuple . replicate 8 <$> random16Bits
             
             addr1 <- getAddress
             addr2 <- getAddress
@@ -150,21 +150,37 @@ spec = do
 
             evalState (ram8 inputbits1 addr1 One  >> ram8 inputbits2 addr2 One  >> ram8 inputbits3 (Zero, One, Zero) One  >> ram8 bits0 addr2 Zero) initialBits `shouldBe` inputbits2
 
-    -- context "RAM64" $ do
-    --     it "writes and reads an 8-bit number" $ do
-    --         inputbits1 <- random16Bits
-    --         inputbits2 <- random16Bits
-    --         inputbits3 <- random16Bits
+    context "RAM64" $ do
+        let get6BitAddress = do
+                addrBit0 <- randomBit
+                addrBit1 <- randomBit
+                addrBit2 <- randomBit
+                addrBit3 <- randomBit
+                addrBit4 <- randomBit
+                addrBit5 <- randomBit
 
-    --         initialBits <- replicate 8 <$> random16Bits
+                if 
+                    (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5) == (Zero, One, Zero, Zero, One, Zero)
+                    then get6BitAddress 
+                    else pure (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5)
+
+        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
+            inputbits1 <- random16Bits
+            inputbits2 <- random16Bits
+            inputbits3 <- random16Bits
+
+            initialBits <- to8Tuple . replicate 8 <$> random16Bits
             
-    --         addr1 <- getAddress
-    --         addr2 <- getAddress
+            addr1 <- get6BitAddress
+            addr2 <- get6BitAddress
 
-    --         bits0 <- random16Bits
+            bits0 <- random16Bits
 
-    --         evalState (ram64 inputbits1 addr1 One  >> ram8 inputbits2 addr2 One  >> ram8 inputbits3 (Zero, One, Zero) One  >> ram8 bits0 addr2 Zero) initialBits `shouldBe` inputbits2
+            evalState (ram64 inputbits1 addr1 One  >> ram64 inputbits2 addr2 One  >> ram64 inputbits3 (Zero, One, Zero, Zero, One, Zero) One  >> ram64 bits0 addr2 Zero) (to8Tuple $ replicate 8 initialBits) `shouldBe` inputbits2
 
+-- duplicate
+to8Tuple :: [a] -> (a, a, a, a, a, a, a, a)
+to8Tuple [x0, x1, x2, x3, x4, x5, x6, x7] = (x0, x1, x2, x3, x4, x5, x6, x7)
 
 convertToInt :: [Bit] -> Int
 convertToInt input = fst (foldr func (0, 0) input) `mod` 256

@@ -5,9 +5,9 @@ module Nand2Tetris.Types.HackWord16 (
    , HackWord16
 ) where
 
-import Nand2Tetris.Types.Bit(Bit(One, Zero))
+import Nand2Tetris.Types.Bit(Bit)
 import Data.List (length)
-import BasicPrelude ((==), ($), Eq, (&&), Show, show, (++))
+import BasicPrelude ((==), ($), Eq, (&&), Show, show, (++), error)
 import Control.Exception (assert)
 
 -- consider using newtype
@@ -19,6 +19,7 @@ toHackWord16 list = assert (length list == 16) $ converttoHackWord16 list
     where
         converttoHackWord16 :: [Bit] -> HackWord16
         converttoHackWord16 [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15] = (x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15)
+        converttoHackWord16 _ = error "undefined"
 
 toList :: HackWord16 -> [Bit]
 toList (x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15) = [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15]
