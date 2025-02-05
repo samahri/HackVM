@@ -7,7 +7,7 @@ import Nand2Tetris.Types.HackWord16
 import BasicPrelude (($), (<>))
 import Nand2Tetris.Chips
 import Test.Hspec
-import Data.List (take, cycle, replicate)
+import Data.List (replicate)
 import Control.Exception (evaluate)
 
 spec :: Spec

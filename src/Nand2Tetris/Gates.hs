@@ -96,6 +96,7 @@ mux16 (input1, input2) sel = case sel of
     Zero -> input1
     One -> input2
 
+-- TODO: replace array with Bus8
 or8Way :: [Bit] -> Output
 or8Way inputArr = assert (length inputArr == 8) (foldr1 (curry or) inputArr)
 
@@ -115,6 +116,7 @@ dMux4Way input sel = case sel of
     (One, Zero) -> (Zero, Zero, input, Zero) 
     (One, One) -> (Zero, Zero, Zero, input)
 
+-- TODO: replace it with newtype
 type Bus8Way = (Output, Output, Output, Output, Output, Output, Output, Output)  
 
 dMux8Way :: Input -> (Sel, Sel, Sel) -> Bus8Way 
