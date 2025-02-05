@@ -177,10 +177,116 @@ spec = do
             bits0 <- random16Bits
 
             evalState (ram64 inputbits1 addr1 One  >> ram64 inputbits2 addr2 One  >> ram64 inputbits3 (Zero, One, Zero, Zero, One, Zero) One  >> ram64 bits0 addr2 Zero) (to8Tuple $ replicate 8 initialBits) `shouldBe` inputbits2
+    
+    context "RAM512" $ do
+        let get9BitAddress = do
+                addrBit0 <- randomBit
+                addrBit1 <- randomBit
+                addrBit2 <- randomBit
+                addrBit3 <- randomBit
+                addrBit4 <- randomBit
+                addrBit5 <- randomBit
+                addrBit6 <- randomBit
+                addrBit7 <- randomBit
+                addrBit8 <- randomBit
+
+                if 
+                    (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8) == (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero)
+                    then get9BitAddress 
+                    else pure (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8)
+
+        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
+            inputbits1 <- random16Bits
+            inputbits2 <- random16Bits
+            inputbits3 <- random16Bits
+
+            initialBits <- to8Tuple . replicate 8 . to8Tuple . replicate 8 <$> random16Bits
+            
+            addr1 <- get9BitAddress
+            addr2 <- get9BitAddress
+
+            bits0 <- random16Bits
+
+            evalState (ram512 inputbits1 addr1 One  >> ram512 inputbits2 addr2 One  >> ram512 inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) One  >> ram512 bits0 addr2 Zero) (to8Tuple $ replicate 8 initialBits) `shouldBe` inputbits2
+
+    context "RAM4K" $ do
+        let get12BitAddress = do
+                addrBit0 <- randomBit
+                addrBit1 <- randomBit
+                addrBit2 <- randomBit
+                addrBit3 <- randomBit
+                addrBit4 <- randomBit
+                addrBit5 <- randomBit
+                addrBit6 <- randomBit
+                addrBit7 <- randomBit
+                addrBit8 <- randomBit
+                addrBit9 <- randomBit
+                addrBit10 <- randomBit
+                addrBit11 <- randomBit
+
+                if 
+                    (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8, addrBit9, addrBit10, addrBit11) 
+                    == (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero)
+                    then get12BitAddress 
+                    else pure (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8, addrBit9, addrBit10, addrBit11)
+
+        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
+            inputbits1 <- random16Bits
+            inputbits2 <- random16Bits
+            inputbits3 <- random16Bits
+
+            initialBits <- to8Tuple . replicate 8 .to8Tuple . replicate 8 . to8Tuple . replicate 8 <$> random16Bits
+            
+            addr1 <- get12BitAddress
+            addr2 <- get12BitAddress
+
+            bits0 <- random16Bits
+
+            evalState (ram4K inputbits1 addr1 One  >> ram4K inputbits2 addr2 One  >> ram4K inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) One  >> ram4K bits0 addr2 Zero) (to8Tuple $ replicate 8 initialBits) `shouldBe` inputbits2
+    
+    context "RAM16K" $ do
+        let get14BitAddress = do
+                addrBit0 <- randomBit
+                addrBit1 <- randomBit
+                addrBit2 <- randomBit
+                addrBit3 <- randomBit
+                addrBit4 <- randomBit
+                addrBit5 <- randomBit
+                addrBit6 <- randomBit
+                addrBit7 <- randomBit
+                addrBit8 <- randomBit
+                addrBit9 <- randomBit
+                addrBit10 <- randomBit
+                addrBit11 <- randomBit
+                addrBit12 <- randomBit
+                addrBit13 <- randomBit
+
+                if 
+                    (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8, addrBit9, addrBit10, addrBit11, addrBit12, addrBit13) 
+                    == (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, One, Zero)
+                    then get14BitAddress 
+                    else pure (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8, addrBit9, addrBit10, addrBit11, addrBit12, addrBit13)
+
+        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
+            inputbits1 <- random16Bits
+            inputbits2 <- random16Bits
+            inputbits3 <- random16Bits
+
+            initialBits <- to8Tuple . replicate 8 . to8Tuple . replicate 8 .to8Tuple . replicate 8 . to8Tuple . replicate 8 <$> random16Bits
+            
+            addr1 <- get14BitAddress
+            addr2 <- get14BitAddress
+
+            bits0 <- random16Bits
+
+            evalState (ram16K inputbits1 addr1 One  >> ram16K inputbits2 addr2 One  >> ram16K inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, One, Zero) One  >> ram16K bits0 addr2 Zero) (to4Tuple $ replicate 4 initialBits) `shouldBe` inputbits2
 
 -- duplicate
 to8Tuple :: [a] -> (a, a, a, a, a, a, a, a)
 to8Tuple [x0, x1, x2, x3, x4, x5, x6, x7] = (x0, x1, x2, x3, x4, x5, x6, x7)
+
+to4Tuple :: [a] -> (a, a, a, a)
+to4Tuple [x0, x1, x2, x3] = (x0, x1, x2, x3)
 
 convertToInt :: [Bit] -> Int
 convertToInt input = fst (foldr func (0, 0) input) `mod` 256

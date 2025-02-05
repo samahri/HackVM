@@ -6,15 +6,15 @@ module Nand2Tetris.Memory (
    ,register
    ,ram8
    ,ram64
---    ,ram512
---    ,ram4K
---    ,ram16K
+   ,ram512
+   ,ram4K
+   ,ram16K
    ,pc
 ) where
 
 import Nand2Tetris.Types.Bit(Bit(..))
 import Nand2Tetris.Types.HackWord16
-import Nand2Tetris.Gates (mux, dMux8Way, dMux8Way16, mux8Way16)
+import Nand2Tetris.Gates (mux, dMux8Way, dMux8Way16, mux8Way16, dMux4Way, dMux4Way16)
 import Nand2Tetris.Chips (inc16)
 import BasicPrelude (($), pure, (<$>), replicate, fmap, error)
 import Control.Monad.Trans.State.Strict (State, get, put, execState)
@@ -125,12 +125,92 @@ to8Tuple :: [a] -> (a, a, a, a, a, a, a, a)
 to8Tuple [x0, x1, x2, x3, x4, x5, x6, x7] = (x0, x1, x2, x3, x4, x5, x6, x7)
 to8Tuple _ = error "undefined"
 
--- tuple4ToList :: (a, a, a, a) -> [a]
--- tuple4ToList (x0, x1, x2, x3) = [x0, x1, x2, x3]
+type Address9Bit = (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit)
+type Ram512State = (Ram64State, Ram64State, Ram64State, Ram64State, Ram64State, Ram64State, Ram64State, Ram64State)  -- length is 8 ram64
 
--- to4Tuple :: [a] -> (a, a, a, a)
--- to4Tuple [x0, x1, x2, x3] = (x0, x1, x2, x3)
--- to4Tuple = error "undefined"
+type RAM512Output = State Ram512State Output16
+
+-- implemented using 8 ram8
+ram512 :: Input16 -> Address9Bit -> Load -> RAM512Output
+ram512 input16 (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8) load = do
+    ram512State <- tuple8ToList <$> get
+    let nextCycleOutput = zipWith execState ram64List ram512State
+        ram64Output = mux8WayRam512 (to8Tuple ram512State) (sel0, sel1, sel2)
+
+    put (to8Tuple nextCycleOutput)
+    pure $ mux8Way16 (tuple8ToList $ mux8WayRam64 ram64Output (sel3, sel4, sel5)) (sel6, sel7, sel8)
+    where
+        inputList = tuple8ToList $ dMux8Way16 input16 (sel0, sel1, sel2)
+        loadArr = tuple8ToList $ dMux8Way load (sel0, sel1, sel2)
+        ram64List = zipWith (\inp -> ram64 inp (sel3, sel4, sel5, sel6, sel7, sel8)) inputList loadArr
+
+mux8WayRam512 :: Ram512State -> (Sel, Sel, Sel) -> Ram64State
+mux8WayRam512 (ram0, ram1, ram2, ram3, ram4, ram5, ram6, ram7) sel = case sel of
+    (Zero, Zero, Zero) -> ram0
+    (Zero, Zero, One) -> ram1
+    (Zero, One, Zero) -> ram2
+    (Zero, One, One) -> ram3
+    (One, Zero, Zero) -> ram4
+    (One, Zero, One) -> ram5
+    (One, One, Zero) -> ram6
+    (One, One, One)  -> ram7
+
+type Address12Bit = (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit)
+type Ram4kState = (Ram512State, Ram512State, Ram512State, Ram512State, Ram512State, Ram512State, Ram512State, Ram512State)  -- length is 8 ram512
+
+type RAM4kOutput = State Ram4kState Output16
+
+ram4K :: Input16 -> Address12Bit -> Load -> RAM4kOutput
+ram4K input16 (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11) load = do
+    ram4KState <- tuple8ToList <$> get
+    let nextCycleOutput = zipWith execState ram4kList ram4KState
+        ram512Output = mux8WayRam4K (to8Tuple ram4KState) (sel0, sel1, sel2)
+        ram64Output = mux8WayRam512 ram512Output (sel3, sel4, sel5)
+
+    put (to8Tuple nextCycleOutput)
+    pure $ mux8Way16 (tuple8ToList $ mux8WayRam64 ram64Output (sel6, sel7, sel8)) (sel9, sel10, sel11)
+    where
+        inputList = tuple8ToList $ dMux8Way16 input16 (sel0, sel1, sel2)
+        loadArr = tuple8ToList $ dMux8Way load (sel0, sel1, sel2)
+        ram4kList = zipWith (\inp -> ram512 inp (sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11)) inputList loadArr
+
+mux8WayRam4K :: Ram4kState -> (Sel, Sel, Sel) -> Ram512State
+mux8WayRam4K (ram0, ram1, ram2, ram3, ram4, ram5, ram6, ram7) sel = case sel of
+    (Zero, Zero, Zero) -> ram0
+    (Zero, Zero, One) -> ram1
+    (Zero, One, Zero) -> ram2
+    (Zero, One, One) -> ram3
+    (One, Zero, Zero) -> ram4
+    (One, Zero, One) -> ram5
+    (One, One, Zero) -> ram6
+    (One, One, One)  -> ram7 
+
+type Address14Bit = (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit)
+type Ram16kState = (Ram4kState, Ram4kState, Ram4kState, Ram4kState)
+
+type RAM16kOutput = State Ram16kState Output16
+
+ram16K :: Input16 -> Address14Bit -> Load -> RAM16kOutput
+ram16K input16 (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13) load = do
+    ram16KState <- tuple4ToList <$> get
+    let nextCycleOutput = zipWith execState ram16kList ram16KState
+        ram4kOutput = mux4WayRam16K (to4Tuple ram16KState) (sel0, sel1)
+        ram512Output = mux8WayRam4K ram4kOutput (sel2, sel3, sel4)
+        ram64Output = mux8WayRam512 ram512Output (sel5, sel6, sel7)
+
+    put (to4Tuple nextCycleOutput)
+    pure $ mux8Way16 (tuple8ToList $ mux8WayRam64 ram64Output (sel8, sel9, sel10)) (sel11, sel12, sel13)
+    where
+        inputList = tuple4ToList $ dMux4Way16 input16 (sel0, sel1)
+        loadArr = tuple4ToList $ dMux4Way load (sel0, sel1)
+        ram16kList = zipWith (\inp -> ram4K inp (sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13)) inputList loadArr
+
+mux4WayRam16K :: Ram16kState -> (Sel, Sel) -> Ram4kState
+mux4WayRam16K (a, b, c, d) sel = case sel of
+    (Zero, Zero) -> a
+    (Zero, One) -> b
+    (One, Zero) -> c
+    (One, One) -> d   
 
 type Inc = Bit
 type Reset = Inc
@@ -156,3 +236,10 @@ pc input16 ctrl = do
         (Zero, Zero, Zero) -> register input16 Zero
     where
         zeros = toHackWord16 $ replicate 16 Zero
+
+tuple4ToList :: (a, a, a, a) -> [a]
+tuple4ToList (x0, x1, x2, x3) = [x0, x1, x2, x3]
+
+to4Tuple :: [a] -> (a, a, a, a)
+to4Tuple [x0, x1, x2, x3] = (x0, x1, x2, x3)
+to4Tuple _ = error "undefined"
