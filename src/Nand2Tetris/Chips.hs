@@ -9,6 +9,7 @@ module Nand2Tetris.Chips (
 import Nand2Tetris.Gates
 import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
+import Nand2Tetris.Types.Bus
 import BasicPrelude ((==), ($), error)
 import Data.List (reverse, replicate)
 import Data.List.NonEmpty (head, fromList)
@@ -70,13 +71,13 @@ alu (x16, y16) (zx, nx, zy, ny, f, no) = (out, zr, ng)
         zeroBits = toHackWord16 $ replicate 16 Zero
 
         out :: Output16
-        out = mux4Way16 (and16 (x,y), add16 (x,y), not16 $ and16 (x,y), not16 $ add16 (x,y)) (no, f)
+        out = mux4Way16 (Bus4Way (and16 (x,y), add16 (x,y), not16 $ and16 (x,y), not16 $ add16 (x,y))) (no, f)
             where
                 x :: HackWord16
-                x = mux4Way16 (x16, zeroBits, not16 x16, not16 zeroBits) (nx, zx)
+                x = mux4Way16 (Bus4Way (x16, zeroBits, not16 x16, not16 zeroBits)) (nx, zx)
 
                 y :: HackWord16
-                y = mux4Way16 (y16, zeroBits, not16 y16, not16 zeroBits) (ny, zy)
+                y = mux4Way16 (Bus4Way (y16, zeroBits, not16 y16, not16 zeroBits)) (ny, zy)
         
         zr :: Zr
         zr = if out == zeroBits then One else Zero

@@ -23,8 +23,9 @@ module Nand2Tetris.Gates(
 
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
-import BasicPrelude ((.), zipWith, length, (==), foldr1, (<$>), ($), error)
-import Control.Exception (assert)
+import Nand2Tetris.Types.Bus
+import Nand2Tetris.Utils
+import BasicPrelude ((.), zipWith, (==), foldr1, (<$>), ($))
 import Data.List (replicate, splitAt)
 import Data.Tuple (curry)
 
@@ -74,9 +75,7 @@ dmux16 input sel = case sel of
     One -> (zeros, input)
 
 not16 :: Input16 -> Output16
-not16 input = toHackWord16 (not <$> inputArr)
-    where
-        inputArr = toList input
+not16 input = let inputArr = toList input in toHackWord16 (not <$> inputArr)
     
 and16 :: (Input16, Input16) -> Output16
 and16 (input1, input2) = toHackWord16 (zipWith (curry and) inputArr1 inputArr2) 
@@ -96,62 +95,54 @@ mux16 (input1, input2) sel = case sel of
     Zero -> input1
     One -> input2
 
--- TODO: replace array with Bus8
-or8Way :: [Bit] -> Output
-or8Way inputArr = assert (length inputArr == 8) (foldr1 (curry or) inputArr)
-
+or8Way :: Bus4Way Input -> Input
+or8Way input = let inputArr = bus4ToList input in foldr1 (curry or) inputArr
+        
 -- use logic gates
-mux4Way16 :: (Input16, Input16, Input16, Input16) -> (Sel, Sel) -> Output16
-mux4Way16 (a, b, c, d) sel = case sel of
+mux4Way16 :: Bus4Way Input16 -> (Sel, Sel) -> Output16 
+mux4Way16 (Bus4Way (a, b, c, d)) sel = case sel of
     (Zero, Zero) -> a
     (Zero, One) -> b
     (One, Zero) -> c
     (One, One) -> d
 
 -- use logic gates
-dMux4Way :: Input -> (Sel, Sel) -> (Output, Output, Output, Output)
+dMux4Way :: Input -> (Sel, Sel) -> Bus4Way Output
 dMux4Way input sel = case sel of
-    (Zero, Zero) -> (input, Zero, Zero, Zero)
-    (Zero, One) -> (Zero, input, Zero, Zero)
-    (One, Zero) -> (Zero, Zero, input, Zero) 
-    (One, One) -> (Zero, Zero, Zero, input)
+    (Zero, Zero) -> Bus4Way (input, Zero, Zero, Zero)
+    (Zero, One) -> Bus4Way (Zero, input, Zero, Zero)
+    (One, Zero) -> Bus4Way (Zero, Zero, input, Zero)
+    (One, One) -> Bus4Way (Zero, Zero, Zero, input)
 
--- TODO: replace it with newtype
-type Bus8Way = (Output, Output, Output, Output, Output, Output, Output, Output)  
-
-dMux8Way :: Input -> (Sel, Sel, Sel) -> Bus8Way 
-dMux8Way input (sel0, sel1, sel2) = combine (upper, lower)
+dMux8Way :: Input -> (Sel, Sel, Sel) -> Bus8Way Output
+dMux8Way input (sel0, sel1, sel2) = combine upper lower
     where
-        lower = if sel0 == Zero then (Zero, Zero, Zero, Zero) else dMux4Way input (sel1, sel2) 
-        upper = if sel0 == One then (Zero, Zero, Zero, Zero) else dMux4Way input (sel1, sel2)
+        lower = if sel0 == Zero then Bus4Way (Zero, Zero, Zero, Zero) else dMux4Way input (sel1, sel2) 
+        upper = if sel0 == One then Bus4Way (Zero, Zero, Zero, Zero) else dMux4Way input (sel1, sel2)
 
-dMux4Way16 :: Input16 -> (Sel, Sel) -> (Output16, Output16, Output16, Output16)
+dMux4Way16 :: Input16 -> (Sel, Sel) -> Bus4Way Output16
 dMux4Way16 input sel = case sel of
-    (Zero, Zero) -> (input, zeros, zeros, zeros)
-    (Zero, One) -> (zeros, input, zeros, zeros)
-    (One, Zero) -> (zeros, zeros, input, zeros) 
-    (One, One) -> (zeros, zeros, zeros, input)
+    (Zero, Zero) -> Bus4Way (input, zeros, zeros, zeros)
+    (Zero, One) -> Bus4Way (zeros, input, zeros, zeros)
+    (One, Zero) -> Bus4Way (zeros, zeros, input, zeros) 
+    (One, One) -> Bus4Way (zeros, zeros, zeros, input)
 
-type Bus8Way16 = (Output16, Output16, Output16, Output16, Output16, Output16, Output16, Output16) 
-
-mux8Way16 :: [Input16] -> (Sel, Sel, Sel) -> Output16
-mux8Way16 registerList (addr0, addr1, addr2) = assert (length registerList == 8) $ mux16 (mux4Way16 registers7to4 addressTuple, mux4Way16 registers3to0 addressTuple) addr0
+mux8Way16 :: Bus8Way Input16 -> (Sel, Sel, Sel) -> Output16
+mux8Way16 inputBus (addr0, addr1, addr2) = mux16 (mux4Way16 registers7to4 addressTuple, mux4Way16 registers3to0 addressTuple) addr0
     where
+        -- TODO: look if toList can be polymorphic
+        registerList = bus8ToList inputBus
         addressTuple = (addr1, addr2)
-        (registers7to4, registers3to0) = let (r7to4l, r3to0l) = splitAt 4 registerList in (to4Tuple r7to4l, to4Tuple r3to0l)
+        (registers7to4, registers3to0) = let (r7to4l, r3to0l) = splitAt 4 registerList in (toBus4 r7to4l, toBus4 r3to0l)
 
-        to4Tuple :: [Input16] -> (Input16, Input16, Input16, Input16)
-        to4Tuple [b0, b1, b2, b3] = (b0, b1, b2, b3)
-        to4Tuple _ = error "undefined"
-
-dMux8Way16 :: Input16 -> (Sel, Sel, Sel) -> Bus8Way16
-dMux8Way16 input16 (sel0, sel1, sel2) = combine (upper, lower)
+dMux8Way16 :: Input16 -> (Sel, Sel, Sel) -> Bus8Way Output16
+dMux8Way16 input16 (sel0, sel1, sel2) = combine upper lower
     where
-        lower = if sel0 == One then dMux4Way16 input16 (sel1, sel2) else  (zeros, zeros, zeros, zeros)
-        upper = if sel0 == Zero then dMux4Way16 input16 (sel1, sel2) else (zeros, zeros, zeros, zeros)
+        lower = if sel0 == One then dMux4Way16 input16 (sel1, sel2) else  Bus4Way (zeros, zeros, zeros, zeros)
+        upper = if sel0 == Zero then dMux4Way16 input16 (sel1, sel2) else Bus4Way (zeros, zeros, zeros, zeros)
 
-combine :: ((a, a, a, a), (a, a, a, a)) -> (a, a, a, a, a, a, a, a)
-combine ((b0, b1, b2, b3), (b4, b5, b6, b7)) = (b0, b1, b2, b3, b4, b5, b6, b7)
+combine :: Bus4Way a -> Bus4Way a -> Bus8Way a
+combine (Bus4Way (b0, b1, b2, b3)) (Bus4Way (b4, b5, b6, b7)) = Bus8Way (b0, b1, b2, b3, b4, b5, b6, b7)
 
 zeros :: HackWord16
 zeros = toHackWord16 $ replicate 16 Zero

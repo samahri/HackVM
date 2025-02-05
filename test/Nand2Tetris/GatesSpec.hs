@@ -5,6 +5,7 @@ module Nand2Tetris.GatesSpec (
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.TestUtil
+import Nand2Tetris.Types.Bus
 
 import BasicPrelude (($))
 import Nand2Tetris.Gates
@@ -79,9 +80,7 @@ spec = do
         dmux bit0 Zero `shouldBe` (bit0, Zero)
         dmux bit0 One `shouldBe` (Zero, bit0)
     
-    describe "or8Way" $ do
-        it "should only accept 8 bit arrays" pending
-        specify "or8Way gate" pending
+    specify "or8Way gate" pending
     
     specify "mux4Way16" $ do
         bit0 <- random16Bits
@@ -89,10 +88,10 @@ spec = do
         bit2 <- random16Bits
         bit3 <- random16Bits
 
-        mux4Way16 (bit0, bit1, bit2, bit3) (Zero, Zero) `shouldBe` bit0
-        mux4Way16 (bit0, bit1, bit2, bit3) (Zero, One) `shouldBe` bit1
-        mux4Way16 (bit0, bit1, bit2, bit3) (One, Zero) `shouldBe` bit2
-        mux4Way16 (bit0, bit1, bit2, bit3) (One, One) `shouldBe` bit3
+        mux4Way16 (Bus4Way (bit0, bit1, bit2, bit3)) (Zero, Zero) `shouldBe` bit0
+        mux4Way16 (Bus4Way (bit0, bit1, bit2, bit3)) (Zero, One) `shouldBe` bit1
+        mux4Way16 (Bus4Way (bit0, bit1, bit2, bit3)) (One, Zero) `shouldBe` bit2
+        mux4Way16 (Bus4Way (bit0, bit1, bit2, bit3)) (One, One) `shouldBe` bit3
     
     specify "mux8Way16" $ do
         bit0 <- random16Bits
@@ -104,43 +103,43 @@ spec = do
         bit6 <- random16Bits
         bit7 <- random16Bits
 
-        mux8Way16 [bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7] (Zero, Zero, Zero) `shouldBe` bit0
-        mux8Way16 [bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7] (Zero, Zero, One) `shouldBe` bit1
-        mux8Way16 [bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7] (Zero, One, Zero) `shouldBe` bit2
-        mux8Way16 [bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7] (Zero, One, One) `shouldBe` bit3
-        mux8Way16 [bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7] (One, Zero, Zero) `shouldBe` bit4
-        mux8Way16 [bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7] (One, Zero, One) `shouldBe` bit5
-        mux8Way16 [bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7] (One, One, Zero) `shouldBe` bit6
-        mux8Way16 [bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7] (One, One, One) `shouldBe` bit7
+        mux8Way16 (Bus8Way (bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7)) (Zero, Zero, Zero) `shouldBe` bit0
+        mux8Way16 (Bus8Way (bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7)) (Zero, Zero, One) `shouldBe` bit1
+        mux8Way16 (Bus8Way (bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7)) (Zero, One, Zero) `shouldBe` bit2
+        mux8Way16 (Bus8Way (bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7)) (Zero, One, One) `shouldBe` bit3
+        mux8Way16 (Bus8Way (bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7)) (One, Zero, Zero) `shouldBe` bit4
+        mux8Way16 (Bus8Way (bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7)) (One, Zero, One) `shouldBe` bit5
+        mux8Way16 (Bus8Way (bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7)) (One, One, Zero) `shouldBe` bit6
+        mux8Way16 (Bus8Way (bit0, bit1, bit2, bit3, bit4, bit5, bit6, bit7)) (One, One, One) `shouldBe` bit7
 
     specify "dMux4Way" $ do
         bit0 <- randomBit
 
-        dMux4Way bit0 (Zero, Zero) `shouldBe` (bit0, Zero, Zero, Zero)
-        dMux4Way bit0 (Zero, One) `shouldBe` (Zero, bit0, Zero, Zero)
-        dMux4Way bit0 (One, Zero) `shouldBe` (Zero, Zero, bit0, Zero)
-        dMux4Way bit0 (One, One) `shouldBe` (Zero, Zero, Zero, bit0)
+        dMux4Way bit0 (Zero, Zero) `shouldBe` Bus4Way (bit0, Zero, Zero, Zero)
+        dMux4Way bit0 (Zero, One) `shouldBe` Bus4Way (Zero, bit0, Zero, Zero)
+        dMux4Way bit0 (One, Zero) `shouldBe` Bus4Way (Zero, Zero, bit0, Zero)
+        dMux4Way bit0 (One, One) `shouldBe` Bus4Way (Zero, Zero, Zero, bit0)
 
     specify "dMux8Way" pending
 
     specify "dMux4Way16" $ do
         bit0 <- random16Bits
 
-        dMux4Way16 bit0 (Zero, Zero) `shouldBe` (bit0, zeros, zeros, zeros)
-        dMux4Way16 bit0 (Zero, One) `shouldBe` (zeros, bit0, zeros, zeros)
-        dMux4Way16 bit0 (One, Zero) `shouldBe` (zeros, zeros, bit0, zeros)
-        dMux4Way16 bit0 (One, One) `shouldBe` (zeros, zeros, zeros, bit0)
+        dMux4Way16 bit0 (Zero, Zero) `shouldBe` Bus4Way (bit0, zeros, zeros, zeros)
+        dMux4Way16 bit0 (Zero, One) `shouldBe` Bus4Way (zeros, bit0, zeros, zeros)
+        dMux4Way16 bit0 (One, Zero) `shouldBe` Bus4Way (zeros, zeros, bit0, zeros)
+        dMux4Way16 bit0 (One, One) `shouldBe` Bus4Way (zeros, zeros, zeros, bit0)
     
     specify "dMux8Way16" $ do
         bit0 <- random16Bits
 
-        dMux8Way16 bit0 (Zero, Zero, Zero) `shouldBe` (bit0, zeros, zeros, zeros, zeros, zeros, zeros, zeros)
-        dMux8Way16 bit0 (Zero, Zero, One) `shouldBe` (zeros, bit0, zeros, zeros, zeros, zeros, zeros, zeros)
-        dMux8Way16 bit0 (Zero, One, Zero) `shouldBe` (zeros, zeros, bit0, zeros, zeros, zeros, zeros, zeros)
-        dMux8Way16 bit0 (Zero, One, One) `shouldBe` (zeros, zeros, zeros, bit0, zeros, zeros, zeros, zeros)
-        dMux8Way16 bit0 (One, Zero, Zero) `shouldBe` (zeros, zeros, zeros, zeros, bit0, zeros, zeros, zeros)
-        dMux8Way16 bit0 (One, Zero, One) `shouldBe`  (zeros, zeros, zeros, zeros, zeros, bit0, zeros, zeros)
-        dMux8Way16 bit0 (One, One, Zero) `shouldBe` (zeros, zeros, zeros, zeros, zeros, zeros, bit0, zeros)
-        dMux8Way16 bit0 (One, One, One) `shouldBe` (zeros, zeros, zeros, zeros, zeros, zeros, zeros, bit0)
+        dMux8Way16 bit0 (Zero, Zero, Zero) `shouldBe` Bus8Way (bit0, zeros, zeros, zeros, zeros, zeros, zeros, zeros)
+        dMux8Way16 bit0 (Zero, Zero, One) `shouldBe` Bus8Way (zeros, bit0, zeros, zeros, zeros, zeros, zeros, zeros)
+        dMux8Way16 bit0 (Zero, One, Zero) `shouldBe` Bus8Way (zeros, zeros, bit0, zeros, zeros, zeros, zeros, zeros)
+        dMux8Way16 bit0 (Zero, One, One) `shouldBe` Bus8Way (zeros, zeros, zeros, bit0, zeros, zeros, zeros, zeros)
+        dMux8Way16 bit0 (One, Zero, Zero) `shouldBe` Bus8Way (zeros, zeros, zeros, zeros, bit0, zeros, zeros, zeros)
+        dMux8Way16 bit0 (One, Zero, One) `shouldBe`  Bus8Way (zeros, zeros, zeros, zeros, zeros, bit0, zeros, zeros)
+        dMux8Way16 bit0 (One, One, Zero) `shouldBe` Bus8Way (zeros, zeros, zeros, zeros, zeros, zeros, bit0, zeros)
+        dMux8Way16 bit0 (One, One, One) `shouldBe` Bus8Way (zeros, zeros, zeros, zeros, zeros, zeros, zeros, bit0)
 
 

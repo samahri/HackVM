@@ -5,6 +5,7 @@ module Nand2Tetris.MemorySpec (
 
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
+import Nand2Tetris.Utils
 import Nand2Tetris.TestUtil
 import Control.Monad.Trans.State.Strict (evalState)
 import BasicPrelude (($), (<$>), (>>), IO, Int, (^), (+), (==), foldr, fst, mod, pure, (.))
@@ -141,7 +142,7 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- to8Tuple . replicate 8 <$> random16Bits
+            initialBits <- toBus8 . replicate 8 <$> random16Bits
             
             addr1 <- getAddress
             addr2 <- getAddress
@@ -169,14 +170,14 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- to8Tuple . replicate 8 <$> random16Bits
+            initialBits <- toBus8 . replicate 8 <$> random16Bits
             
             addr1 <- get6BitAddress
             addr2 <- get6BitAddress
 
             bits0 <- random16Bits
 
-            evalState (ram64 inputbits1 addr1 One  >> ram64 inputbits2 addr2 One  >> ram64 inputbits3 (Zero, One, Zero, Zero, One, Zero) One  >> ram64 bits0 addr2 Zero) (to8Tuple $ replicate 8 initialBits) `shouldBe` inputbits2
+            evalState (ram64 inputbits1 addr1 One  >> ram64 inputbits2 addr2 One  >> ram64 inputbits3 (Zero, One, Zero, Zero, One, Zero) One  >> ram64 bits0 addr2 Zero) (toBus8 $ replicate 8 initialBits) `shouldBe` inputbits2
     
     context "RAM512" $ do
         let get9BitAddress = do
@@ -200,14 +201,14 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- to8Tuple . replicate 8 . to8Tuple . replicate 8 <$> random16Bits
+            initialBits <- toBus8 . replicate 8 . toBus8 . replicate 8 <$> random16Bits
             
             addr1 <- get9BitAddress
             addr2 <- get9BitAddress
 
             bits0 <- random16Bits
 
-            evalState (ram512 inputbits1 addr1 One  >> ram512 inputbits2 addr2 One  >> ram512 inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) One  >> ram512 bits0 addr2 Zero) (to8Tuple $ replicate 8 initialBits) `shouldBe` inputbits2
+            evalState (ram512 inputbits1 addr1 One  >> ram512 inputbits2 addr2 One  >> ram512 inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) One  >> ram512 bits0 addr2 Zero) (toBus8 $ replicate 8 initialBits) `shouldBe` inputbits2
 
     context "RAM4K" $ do
         let get12BitAddress = do
@@ -235,14 +236,14 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- to8Tuple . replicate 8 .to8Tuple . replicate 8 . to8Tuple . replicate 8 <$> random16Bits
+            initialBits <- replicate 8 . toBus8 . replicate 8 . toBus8 . replicate 8 . toBus8 . replicate 8 <$> random16Bits
             
             addr1 <- get12BitAddress
             addr2 <- get12BitAddress
 
             bits0 <- random16Bits
 
-            evalState (ram4K inputbits1 addr1 One  >> ram4K inputbits2 addr2 One  >> ram4K inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) One  >> ram4K bits0 addr2 Zero) (to8Tuple $ replicate 8 initialBits) `shouldBe` inputbits2
+            evalState (ram4K inputbits1 addr1 One  >> ram4K inputbits2 addr2 One  >> ram4K inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) One  >> ram4K bits0 addr2 Zero) (toBus8 initialBits) `shouldBe` inputbits2
     
     context "RAM16K" $ do
         let get14BitAddress = do
@@ -272,21 +273,15 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- to8Tuple . replicate 8 . to8Tuple . replicate 8 .to8Tuple . replicate 8 . to8Tuple . replicate 8 <$> random16Bits
+            initialBits <- toBus4 . replicate 4 . toBus8 . replicate 8 . toBus8 . replicate 8 .toBus8 . replicate 8 . toBus8 . replicate 8 <$> random16Bits
             
             addr1 <- get14BitAddress
             addr2 <- get14BitAddress
 
             bits0 <- random16Bits
 
-            evalState (ram16K inputbits1 addr1 One  >> ram16K inputbits2 addr2 One  >> ram16K inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, One, Zero) One  >> ram16K bits0 addr2 Zero) (to4Tuple $ replicate 4 initialBits) `shouldBe` inputbits2
+            evalState (ram16K inputbits1 addr1 One  >> ram16K inputbits2 addr2 One  >> ram16K inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, One, Zero) One  >> ram16K bits0 addr2 Zero) initialBits `shouldBe` inputbits2
 
--- duplicate
-to8Tuple :: [a] -> (a, a, a, a, a, a, a, a)
-to8Tuple [x0, x1, x2, x3, x4, x5, x6, x7] = (x0, x1, x2, x3, x4, x5, x6, x7)
-
-to4Tuple :: [a] -> (a, a, a, a)
-to4Tuple [x0, x1, x2, x3] = (x0, x1, x2, x3)
 
 convertToInt :: [Bit] -> Int
 convertToInt input = fst (foldr func (0, 0) input) `mod` 256

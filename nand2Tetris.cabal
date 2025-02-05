@@ -29,6 +29,7 @@ library
     Nand2Tetris.Chips
     Nand2Tetris.Memory
     Nand2Tetris.Types.Bit
+    Nand2Tetris.Types.Bus
     Nand2Tetris.Types.HackWord16
     Nand2Tetris.Utils
   other-modules:

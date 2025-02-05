@@ -33,17 +33,12 @@ spec = do
         fullAdder (One, Zero, One)   `shouldBe` (One, Zero)
         fullAdder (One, One, Zero)   `shouldBe` (One, Zero)
         fullAdder (One, One, One)    `shouldBe` (One, One)
-    context "16-bit adder" $ do
-        it "should only accept 16 bit arrays" $ do
-            evaluate (add16 (toHackWord16 $ replicate 17 Zero, ones))              `shouldThrow` anyException 
-            evaluate (add16 (zeros, toHackWord16 $ replicate 14 Zero))             `shouldThrow` anyException 
-            evaluate (add16 (toHackWord16 $ replicate 24 Zero, toHackWord16 $ replicate 14 Zero)) `shouldThrow` anyException
-        specify "16-bit adder" $ do
-            add16 (zeros, zeros)    `shouldBe` zeros
-            add16 (zeros, one)      `shouldBe` one
-            add16 (neg2, one)       `shouldBe` ones
-            add16 (ones, one)       `shouldBe` zeros
-            -- add16 (num255, one)     `shouldBe` (toHackWord16 $ replicate 7 Zero <> [One] <> replicate 8 Zero)
+    specify "16-bit adder" $ do
+        -- TODO: random number generator
+        add16 (zeros, zeros)    `shouldBe` zeros
+        add16 (zeros, one)      `shouldBe` one
+        add16 (neg2, one)       `shouldBe` ones
+        add16 (ones, one)       `shouldBe` zeros
     context "incrementer" $ do
         specify "inc16" $ do
             let num256 = toHackWord16 $ replicate 7 Zero <> [One] <> replicate 8 Zero -- 0000 0001 0000 0
