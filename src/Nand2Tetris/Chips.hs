@@ -14,6 +14,9 @@ import BasicPrelude ((==), ($), error)
 import Data.List (reverse, replicate)
 import Data.List.NonEmpty (head, fromList)
 
+type Input16 = HackWord16
+type Output16 = HackWord16
+
 type Input = Bit
 type Output = Bit
 type Carry = Output
@@ -29,9 +32,6 @@ fullAdder (a, b, c) = (carry, sum)
     where
         sum = mux (xor (b, c), not $ xor (b, c)) a
         carry = mux (and (b, c), or (b, c)) a
-
-type Input16 = HackWord16
-type Output16 = HackWord16
 
 add16 :: (Input16, Input16) -> Output16 
 add16 (a16, b16) = toHackWord16 $ reverse (go (reverse a16t) (reverse b16t) Zero)

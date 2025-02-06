@@ -5,13 +5,12 @@ module Nand2Tetris.MemorySpec (
 
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
-import Nand2Tetris.Utils
+import Nand2Tetris.Types.Bus
 import Nand2Tetris.TestUtil
 import Control.Monad.Trans.State.Strict (evalState)
 import BasicPrelude (($), (<$>), (>>), IO, Int, (^), (+), (==), foldr, fst, mod, pure, (.))
 import Nand2Tetris.Memory
 import Test.Hspec
-import Data.List (replicate)
 import Control.Monad (replicateM_)
 
 spec :: Spec
@@ -71,7 +70,7 @@ spec = do
     context "program counter" $ do
 
         it "initializes to zeros" $ replicateM_ 40 $ do
-            let zeros = toHackWord16 $ replicate 16 Zero
+            let zeros = pure Zero
 
             inputbits <- random16Bits
             initialBits <- random16Bits
@@ -119,8 +118,8 @@ spec = do
             bit1 <- randomBit
             bit2 <- randomBit
             bit3 <- randomBit
-            let inputInt = convertToInt $ toList inputbits
-                outputInt = convertToInt $ toList $ evalState (pc inputbits (One, Zero, Zero) >> pc bits0 (Zero, One, Zero) >> pc bits1 (Zero, One, Zero) >> pc bits2 (bit1, bit2, bit3)) initialBits
+            let inputInt = convertToInt inputbits
+                outputInt = convertToInt $ evalState (pc inputbits (One, Zero, Zero) >> pc bits0 (Zero, One, Zero) >> pc bits1 (Zero, One, Zero) >> pc bits2 (bit1, bit2, bit3)) initialBits
 
             outputInt `shouldBe` (inputInt + 2) `mod` 256
     
@@ -142,7 +141,7 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- toBus8 . replicate 8 <$> random16Bits
+            initialBits <- embedInRam8 <$> random16Bits
             
             addr1 <- getAddress
             addr2 <- getAddress
@@ -170,14 +169,14 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- toBus8 . replicate 8 <$> random16Bits
+            initialBits <- embedInRam64 . embedInRam8 <$> random16Bits
             
             addr1 <- get6BitAddress
             addr2 <- get6BitAddress
 
             bits0 <- random16Bits
 
-            evalState (ram64 addr1 inputbits1 One  >> ram64 addr2 inputbits2 One  >> ram64 (Zero, One, Zero, Zero, One, Zero) inputbits3 One  >> ram64 addr2 bits0 Zero) (toBus8 $ replicate 8 initialBits) `shouldBe` inputbits2
+            evalState (ram64 addr1 inputbits1 One  >> ram64 addr2 inputbits2 One  >> ram64 (Zero, One, Zero, Zero, One, Zero) inputbits3 One  >> ram64 addr2 bits0 Zero) initialBits `shouldBe` inputbits2
     
     context "RAM512" $ do
         let get9BitAddress = do
@@ -201,14 +200,14 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- toBus8 . replicate 8 . toBus8 . replicate 8 <$> random16Bits
+            initialBits <- embedInRam512 . embedInRam64 . embedInRam8 <$> random16Bits
             
             addr1 <- get9BitAddress
             addr2 <- get9BitAddress
 
             bits0 <- random16Bits
 
-            evalState (ram512 addr1 inputbits1 One  >> ram512 addr2 inputbits2 One  >> ram512 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) inputbits3 One  >> ram512 addr2 bits0 Zero) (toBus8 $ replicate 8 initialBits) `shouldBe` inputbits2
+            evalState (ram512 addr1 inputbits1 One  >> ram512 addr2 inputbits2 One  >> ram512 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) inputbits3 One  >> ram512 addr2 bits0 Zero) initialBits `shouldBe` inputbits2
 
     context "RAM4K" $ do
         let get12BitAddress = do
@@ -236,14 +235,14 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- replicate 8 . toBus8 . replicate 8 . toBus8 . replicate 8 . toBus8 . replicate 8 <$> random16Bits
+            initialBits <- embedInRam4K . embedInRam512 . embedInRam64 . embedInRam8 <$> random16Bits
             
             addr1 <- get12BitAddress
             addr2 <- get12BitAddress
 
             bits0 <- random16Bits
 
-            evalState (ram4K addr1 inputbits1 One  >> ram4K addr2 inputbits2 One  >> ram4K (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) inputbits3 One  >> ram4K addr2 bits0 Zero) (toBus8 initialBits) `shouldBe` inputbits2
+            evalState (ram4K addr1 inputbits1 One  >> ram4K addr2 inputbits2 One  >> ram4K (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) inputbits3 One  >> ram4K addr2 bits0 Zero) initialBits `shouldBe` inputbits2
     
     context "RAM16K" $ do
         let get14BitAddress = do
@@ -273,7 +272,7 @@ spec = do
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- toBus4 . replicate 4 . toBus8 . replicate 8 . toBus8 . replicate 8 .toBus8 . replicate 8 . toBus8 . replicate 8 <$> random16Bits
+            initialBits <- embedInRam16K . embedInRam4K . embedInRam512 . embedInRam64 . embedInRam8 <$> random16Bits
             
             addr1 <- get14BitAddress
             addr2 <- get14BitAddress
@@ -282,9 +281,24 @@ spec = do
 
             evalState (ram16K addr1 inputbits1 One  >> ram16K addr2 inputbits2 One  >> ram16K (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, One, Zero) inputbits3 One  >> ram16K addr2 bits0 Zero) initialBits `shouldBe` inputbits2
 
+embedInRam8 :: a -> Bus8Way a
+embedInRam8 = pure
 
-convertToInt :: [Bit] -> Int
-convertToInt input = fst (foldr func (0, 0) input) `mod` 256
+embedInRam64 :: a -> Bus8Way a
+embedInRam64 = pure
+
+embedInRam512 :: a -> Bus8Way a
+embedInRam512 = pure
+
+embedInRam4K :: a -> Bus8Way a
+embedInRam4K = pure
+
+embedInRam16K :: a -> Bus4Way a
+embedInRam16K = pure
+
+-- TODO: make HackWord16 Foldable
+convertToInt :: HackWord16 -> Int
+convertToInt input = fst (foldr func (0, 0) (toList input)) `mod` 256
     where
         func :: Bit -> (Int, Int) -> (Int, Int)
         func b (total, acc) = if b == Zero then (total, acc + 1) else (total + 2^acc, acc + 1)

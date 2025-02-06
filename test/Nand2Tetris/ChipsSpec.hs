@@ -4,25 +4,27 @@ module Nand2Tetris.ChipsSpec (
 
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
-import BasicPrelude (($), (<>))
+import BasicPrelude (($), (<>), pure)
 import Nand2Tetris.Chips
 import Test.Hspec
 import Data.List (replicate)
 
 spec :: Spec
 spec = do
-    let ones = toHackWord16 $ replicate 16 One 
-        zeros = toHackWord16 $ replicate 16 Zero
+    let ones = pure One 
+        zeros = pure Zero
         one = toHackWord16 $ replicate 15 Zero <> [One] -- 0000 0000 0000 0001
         two = toHackWord16 $ replicate 14 Zero <> [One, Zero]
         neg2 = toHackWord16 $ replicate 15 One <> [Zero] -- 1111 1111 1111 1110
         num255 = toHackWord16 $ replicate 8 Zero <> replicate 8 One -- 0000 0000 1111 1111
         neg256 = toHackWord16 $ replicate 8 One <> replicate 8 Zero -- 1111 1111 0000 0000
+    
     specify "half adder" $ do
         halfAdder (Zero, Zero)  `shouldBe` (Zero, Zero)
         halfAdder (Zero, One)   `shouldBe` (Zero, One)
         halfAdder (One, Zero)   `shouldBe` (Zero, One)
         halfAdder (One, One)    `shouldBe` (One, Zero)
+    
     specify "full adder" $ do
         fullAdder (Zero, Zero, Zero) `shouldBe` (Zero, Zero)  
         fullAdder (Zero, Zero, One)  `shouldBe` (Zero, One)
@@ -32,12 +34,14 @@ spec = do
         fullAdder (One, Zero, One)   `shouldBe` (One, Zero)
         fullAdder (One, One, Zero)   `shouldBe` (One, Zero)
         fullAdder (One, One, One)    `shouldBe` (One, One)
+    
     specify "16-bit adder" $ do
         -- TODO: random number generator
         add16 (zeros, zeros)    `shouldBe` zeros
         add16 (zeros, one)      `shouldBe` one
         add16 (neg2, one)       `shouldBe` ones
         add16 (ones, one)       `shouldBe` zeros
+    
     context "incrementer" $ do
         specify "inc16" $ do
             let num256 = toHackWord16 $ replicate 7 Zero <> [One] <> replicate 8 Zero -- 0000 0001 0000 0
@@ -46,6 +50,7 @@ spec = do
             inc16 zeros     `shouldBe` one
             inc16 num255    `shouldBe` num256 -- 0000 0000 1111 1111 -> 0000 0001 0000 0000
             inc16 num       `shouldBe` ones
+    
     specify "ALU" $ do
         -- zx=1, nx=0, zy=1, ny=0, f=1, no=0 -> 0
         alu (zeros, ones) (One, Zero, One, Zero, One, Zero)     `shouldBe` (zeros, One, Zero)           

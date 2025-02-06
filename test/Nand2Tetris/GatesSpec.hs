@@ -7,53 +7,64 @@ import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.TestUtil
 import Nand2Tetris.Types.Bus
 
-import BasicPrelude (($))
+import BasicPrelude (($), pure)
 import Nand2Tetris.Gates
 import Test.Hspec
-import Data.List (take, cycle, replicate)
+import Data.List (take, cycle)
 
 spec :: Spec
 spec = do
-    let ones = toHackWord16 $ replicate 16 One 
-        zeros = toHackWord16 $ replicate 16 Zero
+    let ones = pure One 
+        zeros = pure Zero
     specify "nand gate" $ do
         nand (One, One)   `shouldBe` Zero
         nand (One, Zero)  `shouldBe` One
         nand (Zero, One)  `shouldBe` One
         nand (Zero, Zero) `shouldBe` One
+    
     specify "not gate" $ do
         not One `shouldBe` Zero
         not Zero `shouldBe` One
+    
     describe "not16 gate" $ do
         specify "not16 gate" $ do
             not16 ones `shouldBe` zeros
             not16 zeros `shouldBe` ones
-            not16 (toHackWord16 [One, One, One, One, Zero, Zero, Zero, Zero, One, One, One, One, Zero, Zero, Zero, Zero])
+            not16 (HackWord16F (One, One, One, One, Zero, Zero, Zero, Zero, One, One, One, One, Zero, Zero, Zero, Zero))
                 `shouldBe`
-                toHackWord16 [Zero, Zero, Zero, Zero, One, One, One, One, Zero, Zero, Zero, Zero, One, One, One, One]
+                HackWord16F (Zero, Zero, Zero, Zero, One, One, One, One, Zero, Zero, Zero, Zero, One, One, One, One)
+    
     specify "and gate" $ do
        and (One, One)   `shouldBe` One
        and (One, Zero)  `shouldBe` Zero
        and (Zero, One)  `shouldBe` Zero
        and (Zero, Zero) `shouldBe` Zero
+    
     specify "and16 gate" $ do
+        -- TODO use random bit generator
         and16 (ones, zeros) `shouldBe` zeros
         and16 (ones, ones) `shouldBe` ones
         and16 (toHackWord16 $ take 16 $ cycle [One, Zero], toHackWord16 $ take 16 $ cycle [Zero, One]) `shouldBe` zeros
+    
     specify "or gate" $ do
+        
         or (One, One)   `shouldBe` One
         or (One, Zero)  `shouldBe` One
         or (Zero, One)  `shouldBe` One
         or (Zero, Zero) `shouldBe` Zero
+
     specify "or16 gate" $ do
+        -- TODO property based testing
         or16 (zeros, zeros) `shouldBe` zeros
         or16 (ones, zeros) `shouldBe` ones
         or16 (toHackWord16 $ take 16 $ cycle [One, Zero], toHackWord16 $ take 16 $ cycle [Zero, One]) `shouldBe` ones 
+    
     specify "nor gate" $ do
         nor (One, One)   `shouldBe` Zero
         nor (One, Zero)  `shouldBe` Zero
         nor (Zero, One)  `shouldBe` Zero
         nor (Zero, Zero) `shouldBe` One
+    
     specify "xor gate" $ do
         xor (One, One)   `shouldBe` Zero
         xor (One, Zero)  `shouldBe` One

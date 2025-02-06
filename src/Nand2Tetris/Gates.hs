@@ -27,8 +27,8 @@ import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Types.Bus
 import Nand2Tetris.Utils
-import BasicPrelude ((.), zipWith, (==), foldr1, (<$>), ($))
-import Data.List (replicate, splitAt)
+import BasicPrelude ((.), (==), foldr1, (<$>))
+import Control.Applicative (pure, liftA2)
 import Data.Tuple (curry)
 
 type Input16 = HackWord16
@@ -77,19 +77,13 @@ dmux16 input sel = case sel of
     One -> (zeros, input)
 
 not16 :: Input16 -> Output16
-not16 input = let inputArr = toList input in toHackWord16 (not <$> inputArr)
+not16 input = not <$> input
     
 and16 :: (Input16, Input16) -> Output16
-and16 (input1, input2) = toHackWord16 (zipWith (curry and) inputArr1 inputArr2) 
-    where
-        inputArr1 = toList input1
-        inputArr2 = toList input2
+and16 (input1, input2) = liftA2 (curry and) input1 input2
 
 or16 :: (Input16, Input16) -> Output16
-or16 (input1, input2) = toHackWord16 (zipWith (curry or) inputArr1 inputArr2) 
-    where
-        inputArr1 = toList input1
-        inputArr2 = toList input2
+or16 (input1, input2) = liftA2 (curry or) input1 input2
 
 -- TODO use logic gates
 mux16 :: (Input16, Input16) -> Sel -> Output16
@@ -99,6 +93,10 @@ mux16 (input1, input2) sel = case sel of
 
 or8Way :: Bus4Way Input -> Input
 or8Way input = let inputArr = bus4ToList input in foldr1 (curry or) inputArr
+    where
+        -- TODO: implement foldable
+        bus4ToList :: Bus4Way a -> [a]
+        bus4ToList (Bus4Way (x0, x1, x2, x3)) = [x0, x1, x2, x3]
         
 -- TODO use logic gates
 mux4Way16 :: Bus4Way Input16 -> (Sel, Sel) -> Output16 
@@ -117,10 +115,10 @@ dMux4Way input sel = case sel of
     (One, One) -> Bus4Way (Zero, Zero, Zero, input)
 
 dMux8Way :: Input -> (Sel, Sel, Sel) -> Bus8Way Output
-dMux8Way input (sel0, sel1, sel2) = combine upper lower
+dMux8Way input (sel0, sel1, sel2) = combine4Way upper lower
     where
-        lower = if sel0 == Zero then Bus4Way (Zero, Zero, Zero, Zero) else dMux4Way input (sel1, sel2) 
-        upper = if sel0 == One then Bus4Way (Zero, Zero, Zero, Zero) else dMux4Way input (sel1, sel2)
+        lower = if sel0 == Zero then pure Zero else dMux4Way input (sel1, sel2) 
+        upper = if sel0 == One then pure Zero else dMux4Way input (sel1, sel2)
 
 dMux4Way16 :: Input16 -> (Sel, Sel) -> Bus4Way Output16
 dMux4Way16 input sel = case sel of
@@ -132,15 +130,14 @@ dMux4Way16 input sel = case sel of
 mux8Way16 :: Bus8Way Input16 -> (Sel, Sel, Sel) -> Output16
 mux8Way16 inputBus (addr0, addr1, addr2) = mux16 (mux4Way16 registers7to4 addressTuple, mux4Way16 registers3to0 addressTuple) addr0
     where
-        registerList = bus8ToList inputBus
         addressTuple = (addr1, addr2)
-        (registers7to4, registers3to0) = let (r7to4l, r3to0l) = splitAt 4 registerList in (toBus4 r7to4l, toBus4 r3to0l)
+        (registers7to4, registers3to0) = split8Bus inputBus
 
 dMux8Way16 :: Input16 -> (Sel, Sel, Sel) -> Bus8Way Output16
-dMux8Way16 input16 (sel0, sel1, sel2) = combine upper lower
+dMux8Way16 input16 (sel0, sel1, sel2) = combine4Way upper lower
     where
-        lower = if sel0 == One then dMux4Way16 input16 (sel1, sel2) else  Bus4Way (zeros, zeros, zeros, zeros)
-        upper = if sel0 == Zero then dMux4Way16 input16 (sel1, sel2) else Bus4Way (zeros, zeros, zeros, zeros)
+        lower = if sel0 == One then dMux4Way16 input16 (sel1, sel2) else  pure zeros
+        upper = if sel0 == Zero then dMux4Way16 input16 (sel1, sel2) else pure zeros
 
 mux8WayRam :: Bus8Way a -> (Sel, Sel, Sel) -> a
 mux8WayRam (Bus8Way(ram0, ram1, ram2, ram3, ram4, ram5, ram6, ram7)) sel = case sel of
@@ -160,8 +157,8 @@ mux4WayRam (Bus4Way (a, b, c, d)) sel = case sel of
     (One, Zero) -> c
     (One, One) -> d
 
-combine :: Bus4Way a -> Bus4Way a -> Bus8Way a
-combine (Bus4Way (b0, b1, b2, b3)) (Bus4Way (b4, b5, b6, b7)) = Bus8Way (b0, b1, b2, b3, b4, b5, b6, b7)
+split8Bus :: Bus8Way a -> (Bus4Way a, Bus4Way a)
+split8Bus (Bus8Way (x1, x2, x3, x4, x5, x6, x7, x8)) = (Bus4Way (x1, x2, x3, x4), Bus4Way (x5, x6, x7, x8))
 
 zeros :: HackWord16
-zeros = toHackWord16 $ replicate 16 Zero
+zeros = pure Zero
