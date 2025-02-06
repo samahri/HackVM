@@ -113,9 +113,9 @@ ram64 (sel0, sel1, sel2, sel3, sel4, sel5) input16 load = do
     put nextCycleOutput
     pure registerOutput
     where
-        ram8MemoryBus = (sel3, sel4, sel5)
-        ram8Selector = (sel0, sel1, sel2)
-        registerSelector = (sel3, sel4, sel5)
+        ram8MemoryBus = (sel0, sel1, sel2)
+        ram8Selector = (sel3, sel4, sel5)
+        registerSelector = (sel0, sel1, sel2)
 
 {-
     RAM512 - 512 x 16 bit RAM
@@ -141,10 +141,10 @@ ram512 (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8) input16 load = do
     put nextCycleOutput
     pure registerOutput
     where
-        ram64MemoryBus = (sel3, sel4, sel5, sel6, sel7, sel8)
-        ram64Selector = (sel0, sel1, sel2)
+        ram64MemoryBus = (sel0, sel1, sel2, sel3, sel4, sel5)
+        ram64Selector = (sel6, sel7, sel8)
         ram8Selector = (sel3, sel4, sel5)
-        registerSelector = (sel6, sel7, sel8)
+        registerSelector = (sel0, sel1, sel2) -- 
         
           
 {-
@@ -174,11 +174,11 @@ ram4K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11)
     put nextCycleOutput
     pure registerOutput
     where
-        ram512MemoryBus = (sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11)
-        ram512Selector = (sel0, sel1, sel2)
-        ram64Selector = (sel3, sel4, sel5)
-        ram8Selector = (sel6, sel7, sel8)
-        registerSelector = (sel9, sel10, sel11)
+        ram512MemoryBus = (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8)
+        ram512Selector = (sel9, sel10, sel11)
+        ram64Selector = (sel6, sel7, sel8)
+        ram8Selector = (sel3, sel4, sel5) 
+        registerSelector = (sel0, sel1, sel2) 
 
 {-
     RAM16K - 16384 x 16 bit RAM
@@ -193,7 +193,7 @@ ram16K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11
     ram16KState <- get
     let inputBus = dMux4Way16 input16 ram4KSelector
         loadArr = dMux4Way load ram4KSelector
-        -- TODO: change addressing scheme to not use long tuples
+
         memroyFunction = ram4K ram4KMemoryBus
         
         nextCycleOutput = operateMemoryMachine memroyFunction inputBus loadArr ram16KState
@@ -207,12 +207,12 @@ ram16K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11
     put nextCycleOutput
     pure registerOutput
     where
-        ram4KMemoryBus = (sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13)
-        ram4KSelector = (sel0, sel1)
-        ram512Selector = (sel2, sel3, sel4)
-        ram64Selector = (sel5, sel6, sel7)
-        ram8Selector = (sel8, sel9, sel10)
-        registerSelector = (sel11, sel12, sel13)
+        ram4KMemoryBus = (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11)
+        ram4KSelector = (sel12, sel13)
+        ram512Selector = (sel9, sel10, sel11)
+        ram64Selector = (sel6, sel7, sel8)
+        ram8Selector = (sel3, sel4, sel5)
+        registerSelector = (sel0, sel1, sel2)
 
 {-
     Program Counter
