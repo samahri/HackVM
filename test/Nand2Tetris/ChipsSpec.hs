@@ -8,7 +8,6 @@ import BasicPrelude (($), (<>))
 import Nand2Tetris.Chips
 import Test.Hspec
 import Data.List (replicate)
-import Control.Exception (evaluate)
 
 spec :: Spec
 spec = do

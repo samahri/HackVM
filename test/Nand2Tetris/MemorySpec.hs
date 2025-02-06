@@ -149,7 +149,7 @@ spec = do
 
             bits0 <- random16Bits
 
-            evalState (ram8 inputbits1 addr1 One  >> ram8 inputbits2 addr2 One  >> ram8 inputbits3 (Zero, One, Zero) One  >> ram8 bits0 addr2 Zero) initialBits `shouldBe` inputbits2
+            evalState (ram8 addr1 inputbits1 One  >> ram8 addr2 inputbits2 One  >> ram8 (Zero, One, Zero) inputbits3 One  >> ram8 addr2 bits0 Zero) initialBits `shouldBe` inputbits2
 
     context "RAM64" $ do
         let get6BitAddress = do
@@ -177,7 +177,7 @@ spec = do
 
             bits0 <- random16Bits
 
-            evalState (ram64 inputbits1 addr1 One  >> ram64 inputbits2 addr2 One  >> ram64 inputbits3 (Zero, One, Zero, Zero, One, Zero) One  >> ram64 bits0 addr2 Zero) (toBus8 $ replicate 8 initialBits) `shouldBe` inputbits2
+            evalState (ram64 addr1 inputbits1 One  >> ram64 addr2 inputbits2 One  >> ram64 (Zero, One, Zero, Zero, One, Zero) inputbits3 One  >> ram64 addr2 bits0 Zero) (toBus8 $ replicate 8 initialBits) `shouldBe` inputbits2
     
     context "RAM512" $ do
         let get9BitAddress = do
@@ -208,7 +208,7 @@ spec = do
 
             bits0 <- random16Bits
 
-            evalState (ram512 inputbits1 addr1 One  >> ram512 inputbits2 addr2 One  >> ram512 inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) One  >> ram512 bits0 addr2 Zero) (toBus8 $ replicate 8 initialBits) `shouldBe` inputbits2
+            evalState (ram512 addr1 inputbits1 One  >> ram512 addr2 inputbits2 One  >> ram512 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) inputbits3 One  >> ram512 addr2 bits0 Zero) (toBus8 $ replicate 8 initialBits) `shouldBe` inputbits2
 
     context "RAM4K" $ do
         let get12BitAddress = do
@@ -243,7 +243,7 @@ spec = do
 
             bits0 <- random16Bits
 
-            evalState (ram4K inputbits1 addr1 One  >> ram4K inputbits2 addr2 One  >> ram4K inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) One  >> ram4K bits0 addr2 Zero) (toBus8 initialBits) `shouldBe` inputbits2
+            evalState (ram4K addr1 inputbits1 One  >> ram4K addr2 inputbits2 One  >> ram4K (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero) inputbits3 One  >> ram4K addr2 bits0 Zero) (toBus8 initialBits) `shouldBe` inputbits2
     
     context "RAM16K" $ do
         let get14BitAddress = do
@@ -280,7 +280,7 @@ spec = do
 
             bits0 <- random16Bits
 
-            evalState (ram16K inputbits1 addr1 One  >> ram16K inputbits2 addr2 One  >> ram16K inputbits3 (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, One, Zero) One  >> ram16K bits0 addr2 Zero) initialBits `shouldBe` inputbits2
+            evalState (ram16K addr1 inputbits1 One  >> ram16K addr2 inputbits2 One  >> ram16K (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, One, Zero) inputbits3 One  >> ram16K addr2 bits0 Zero) initialBits `shouldBe` inputbits2
 
 
 convertToInt :: [Bit] -> Int

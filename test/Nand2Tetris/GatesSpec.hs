@@ -141,5 +141,8 @@ spec = do
         dMux8Way16 bit0 (One, Zero, One) `shouldBe`  Bus8Way (zeros, zeros, zeros, zeros, zeros, bit0, zeros, zeros)
         dMux8Way16 bit0 (One, One, Zero) `shouldBe` Bus8Way (zeros, zeros, zeros, zeros, zeros, zeros, bit0, zeros)
         dMux8Way16 bit0 (One, One, One) `shouldBe` Bus8Way (zeros, zeros, zeros, zeros, zeros, zeros, zeros, bit0)
+    
+    specify "mux8WayRam" pending
+    specify "mux4WayRam" pending
 
 
