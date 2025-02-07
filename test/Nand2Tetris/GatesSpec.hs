@@ -88,8 +88,8 @@ spec = do
     specify "dmux gate" $ do
         bit0 <- randomBit
         
-        dmux bit0 Zero `shouldBe` (bit0, Zero)
-        dmux bit0 One `shouldBe` (Zero, bit0)
+        dmux bit0 Zero `shouldBe` Bus2Way (bit0, Zero)
+        dmux bit0 One `shouldBe` Bus2Way (Zero, bit0)
     
     specify "or8Way gate" pending
     
@@ -152,7 +152,8 @@ spec = do
         dMux8Way16 bit0 (One, Zero, One) `shouldBe`  Bus8Way (zeros, zeros, zeros, zeros, zeros, bit0, zeros, zeros)
         dMux8Way16 bit0 (One, One, Zero) `shouldBe` Bus8Way (zeros, zeros, zeros, zeros, zeros, zeros, bit0, zeros)
         dMux8Way16 bit0 (One, One, One) `shouldBe` Bus8Way (zeros, zeros, zeros, zeros, zeros, zeros, zeros, bit0)
-    
+
+    specify "muxRam" pending 
     specify "mux8WayRam" pending
     specify "mux4WayRam" pending
 

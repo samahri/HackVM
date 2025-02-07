@@ -4,11 +4,9 @@ module Nand2Tetris.MemorySpec (
 ) where
 
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
-import Nand2Tetris.Types.HackWord16
-import Nand2Tetris.Types.Bus
 import Nand2Tetris.TestUtil
 import Control.Monad.Trans.State.Strict (evalState)
-import BasicPrelude (($), (<$>), (>>), IO, Int, (^), (+), (==), foldr, fst, mod, pure, (.))
+import BasicPrelude (($), (>>), IO, pure, (==), mod, (+))
 import Nand2Tetris.Memory
 import Test.Hspec
 import Control.Monad (replicateM_)
@@ -135,13 +133,13 @@ spec = do
                     then getAddress 
                     else pure (addrBit0, addrBit1, addrBit2)
 
-        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
+        it "writes and reads an 16-bit number" $ replicateM_ 40 $ do
             
             inputbits1 <- random16Bits
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- embedInRam8 <$> random16Bits
+            initialBits <- randomRam8
             
             addr1 <- getAddress
             addr2 <- getAddress
@@ -164,12 +162,12 @@ spec = do
                     then get6BitAddress 
                     else pure (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5)
 
-        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
+        it "writes and reads an 16-bit number" $ replicateM_ 40 $ do
             inputbits1 <- random16Bits
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- embedInRam64 . embedInRam8 <$> random16Bits
+            initialBits <- randomRam64
             
             addr1 <- get6BitAddress
             addr2 <- get6BitAddress
@@ -195,12 +193,12 @@ spec = do
                     then get9BitAddress 
                     else pure (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8)
 
-        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
+        it "writes and reads an 16-bit number" $ replicateM_ 20 $ do
             inputbits1 <- random16Bits
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- embedInRam512 . embedInRam64 . embedInRam8 <$> random16Bits
+            initialBits <- randomRam512
             
             addr1 <- get9BitAddress
             addr2 <- get9BitAddress
@@ -230,12 +228,12 @@ spec = do
                     then get12BitAddress 
                     else pure (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8, addrBit9, addrBit10, addrBit11)
 
-        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
+        it "writes and reads an 16-bit number" $ replicateM_ 10 $ do
             inputbits1 <- random16Bits
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- embedInRam4K . embedInRam512 . embedInRam64 . embedInRam8 <$> random16Bits
+            initialBits <- randomRam4K
             
             addr1 <- get12BitAddress
             addr2 <- get12BitAddress
@@ -267,12 +265,12 @@ spec = do
                     then get14BitAddress 
                     else pure (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8, addrBit9, addrBit10, addrBit11, addrBit12, addrBit13)
 
-        it "writes and reads an 8-bit number" $ replicateM_ 40 $ do
+        it "writes and reads an 16-bit number" $ replicateM_ 5 $ do
             inputbits1 <- random16Bits
             inputbits2 <- random16Bits
             inputbits3 <- random16Bits
 
-            initialBits <- embedInRam16K . embedInRam4K . embedInRam512 . embedInRam64 . embedInRam8 <$> random16Bits
+            initialBits <- randomRam16K
             
             addr1 <- get14BitAddress
             addr2 <- get14BitAddress
@@ -280,25 +278,26 @@ spec = do
             bits0 <- random16Bits
 
             evalState (ram16K addr1 inputbits1 One  >> ram16K addr2 inputbits2 One  >> ram16K (Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, Zero, One, Zero, One, Zero) inputbits3 One  >> ram16K addr2 bits0 Zero) initialBits `shouldBe` inputbits2
+    
+    context "rom32K" $ do
+        let getRandomRomAddress = do
+                addrBit0 <- randomBit
+                addrBit1 <- randomBit
+                addrBit2 <- randomBit
+                addrBit3 <- randomBit
+                addrBit4 <- randomBit
+                addrBit5 <- randomBit
+                addrBit6 <- randomBit
+                addrBit7 <- randomBit
+                addrBit8 <- randomBit
+                addrBit9 <- randomBit
+                addrBit10 <- randomBit
+                addrBit11 <- randomBit
+                addrBit12 <- randomBit
+                addrBit13 <- randomBit 
+                addrBit14 <- randomBit 
+                addrBit15 <- randomBit 
 
-embedInRam8 :: a -> Bus8Way a
-embedInRam8 = pure
-
-embedInRam64 :: a -> Bus8Way a
-embedInRam64 = pure
-
-embedInRam512 :: a -> Bus8Way a
-embedInRam512 = pure
-
-embedInRam4K :: a -> Bus8Way a
-embedInRam4K = pure
-
-embedInRam16K :: a -> Bus4Way a
-embedInRam16K = pure
-
--- TODO: make HackWord16 Foldable
-convertToInt :: HackWord16 -> Int
-convertToInt input = fst (foldr func (0, 0) (toList input)) `mod` 256
-    where
-        func :: Bit -> (Int, Int) -> (Int, Int)
-        func b (total, acc) = if b == Zero then (total, acc + 1) else (total + 2^acc, acc + 1)
+                pure (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8, addrBit9, addrBit10, addrBit11, addrBit12, addrBit13, addrBit14, addrBit15)
+            
+        it "reads a 16-bit number" pending

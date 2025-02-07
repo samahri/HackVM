@@ -28,6 +28,7 @@ library
     Nand2Tetris.Gates
     Nand2Tetris.Chips
     Nand2Tetris.Memory
+    Nand2Tetris.HackComputer
     Nand2Tetris.Types.Bit
     Nand2Tetris.Types.Bus
     Nand2Tetris.Types.HackWord16
@@ -73,6 +74,7 @@ test-suite nand2Tetris-test
       Nand2Tetris.GatesSpec
     , Nand2Tetris.ChipsSpec
     , Nand2Tetris.MemorySpec
+    , Nand2Tetris.HackComputerSpec
     , Nand2Tetris.TestUtil
   hs-source-dirs:
       test

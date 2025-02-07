@@ -19,6 +19,7 @@ module Nand2Tetris.Gates(
   , dMux4Way16
   , dMux8Way
   , dMux8Way16
+  , muxRam
   , mux8WayRam
   , mux4WayRam
 ) where
@@ -65,16 +66,16 @@ mux (a , b) sel = or (o1, o2)
         o1 = and (a, not sel)
         o2 = and (b, sel)
 
-dmux :: Input -> Sel -> (Output, Output)
-dmux input sel = (o1, o2)
+dmux :: Input -> Sel -> Bus2Way Output
+dmux input sel = Bus2Way (o1, o2)
     where
         o1 = and (input, not sel)
         o2 = and (input , sel)
 
-dmux16 :: Input16 -> Sel -> (Output16, Output16)
+dmux16 :: Input16 -> Sel -> Bus2Way Output16
 dmux16 input sel = case sel of
-    Zero -> (input, zeros)
-    One -> (zeros, input)
+    Zero -> Bus2Way (input, zeros)
+    One -> Bus2Way (zeros, input)
 
 not16 :: Input16 -> Output16
 not16 input = not <$> input
@@ -138,6 +139,12 @@ dMux8Way16 input16 (sel0, sel1, sel2) = combine4Way upper lower
     where
         lower = if sel0 == One then dMux4Way16 input16 (sel1, sel2) else  pure zeros
         upper = if sel0 == Zero then dMux4Way16 input16 (sel1, sel2) else pure zeros
+
+-- TODO use logic gates
+muxRam :: Bus2Way a -> Sel -> a
+muxRam (Bus2Way (input1, input2)) sel = case sel of
+    Zero -> input1
+    One -> input2
 
 mux8WayRam :: Bus8Way a -> (Sel, Sel, Sel) -> a
 mux8WayRam (Bus8Way(ram0, ram1, ram2, ram3, ram4, ram5, ram6, ram7)) sel = case sel of
