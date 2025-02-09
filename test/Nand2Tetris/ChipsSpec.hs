@@ -4,6 +4,7 @@ module Nand2Tetris.ChipsSpec (
 
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.Types.HackWord16
+import Nand2Tetris.TestUtil
 import BasicPrelude (($), (<>), pure)
 import Nand2Tetris.Chips
 import Test.Hspec
@@ -13,7 +14,6 @@ spec :: Spec
 spec = do
     let ones = pure One 
         zeros = pure Zero
-        one = toHackWord16 $ replicate 15 Zero <> [One] -- 0000 0000 0000 0001
         two = toHackWord16 $ replicate 14 Zero <> [One, Zero]
         neg2 = toHackWord16 $ replicate 15 One <> [Zero] -- 1111 1111 1111 1110
         num255 = toHackWord16 $ replicate 8 Zero <> replicate 8 One -- 0000 0000 1111 1111
@@ -52,7 +52,7 @@ spec = do
             inc16 num       `shouldBe` ones
     
     specify "ALU" $ do
-        -- zx=1, nx=0, zy=1, ny=0, f=1, no=0 -> 0
+        -- a = 0; c = 101010
         alu (zeros, ones) (One, Zero, One, Zero, One, Zero)     `shouldBe` (zeros, One, Zero)           
 
         -- zx=1, nx=1, zy=1, ny=1, f=1, no=1 -> 1
@@ -62,6 +62,8 @@ spec = do
         alu (num255, num255) (One, One, One, Zero, One, Zero)   `shouldBe` (ones, Zero, One)        
         
         alu (num255, zeros)  (Zero, Zero, One, One, Zero, Zero)   `shouldBe` (num255, Zero, Zero)  -- zx=0, nx=0, zy=1, ny=1, f=0, no=0 -> x
+        
+        -- 
         alu (zeros, num255)  (One, One, Zero, Zero, Zero, Zero)   `shouldBe` (num255, Zero, Zero)  -- zx=1, nx=1, zy=0, ny=0, f=0, no=0 -> y
         alu (one, zeros)     (Zero, Zero, One, One, Zero, One)    `shouldBe` (neg2, Zero, One)  -- zx=0, nx=0, zy=1, ny=1, f=0, no=1 -> NOT x
         alu (zeros, num255)  (One, One, Zero, Zero, Zero, One)    `shouldBe` (neg256, Zero, One)  -- zx=1, nx=1, zy=0, ny=0, f=0, no=1 -> NOT y

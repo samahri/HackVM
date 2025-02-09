@@ -4,7 +4,7 @@ import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Types.Bit
 import Nand2Tetris.Types.Bus
 import Nand2Tetris.Utils
-import BasicPrelude (IO, Int, replicateM, (<$>), (+), (^), (==), mod, foldr, fst)
+import BasicPrelude (IO, Int, replicateM, (<$>), (+), (^), (==), mod, foldr, fst, ($), (<>), pure, replicate)
 import System.Random (randomIO)
 
 randomBit :: IO Bit
@@ -12,6 +12,22 @@ randomBit = randomIO
 
 random16Bits :: IO HackWord16
 random16Bits = toHackWord16 <$> replicateM 16 randomBit
+
+randomAInstruction :: IO HackWord16
+randomAInstruction = do
+    number <- replicateM 15 randomBit
+    let output = toHackWord16 $ [Zero] <> number
+    pure output
+
+random3BitAddress :: IO (Bit, Bit, Bit)
+random3BitAddress = do
+    bit1 <- randomBit
+    bit2 <- randomBit
+    bit3 <- randomBit
+    pure (bit1, bit2, bit3)
+
+one :: HackWord16
+one = toHackWord16 $ replicate 15 Zero <> [One] -- 0000 0000 0000 0001
 
 type Ram8State = Bus8Way HackWord16
 randomRam8 :: IO Ram8State

@@ -301,3 +301,6 @@ spec = do
                 pure (addrBit0, addrBit1, addrBit2, addrBit3, addrBit4, addrBit5, addrBit6, addrBit7, addrBit8, addrBit9, addrBit10, addrBit11, addrBit12, addrBit13, addrBit14, addrBit15)
             
         it "reads a 16-bit number" pending
+
+    specify "screen" pending
+    specify "keyboard" pending

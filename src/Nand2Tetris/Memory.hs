@@ -13,6 +13,8 @@ module Nand2Tetris.Memory (
    ,ram16K
    ,pc
    ,rom32K
+   ,screen
+   ,keyboard
    ,loadROM32K
 ) where
 
@@ -21,7 +23,7 @@ import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Types.Bus
 import Nand2Tetris.Gates (mux, dMux8Way, dMux8Way16, mux8Way16, dMux4Way, dMux4Way16, muxRam, mux8WayRam, mux4WayRam, dmux, dmux16)
 import Nand2Tetris.Chips (inc16)
-import BasicPrelude ((<$>))
+import BasicPrelude ((<$>), IO, (.))
 import Control.Applicative (Applicative, pure, (<*), liftA2)
 import Control.Monad.Trans.State.Strict (State, get, put, execState)
 
@@ -267,6 +269,42 @@ rom32K (HackWord16F (addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, add
         ram64Selector = (addr6, addr7, addr8)
         ram8Selector = (addr3, addr4, addr5)
         registerSelector = (addr0, addr1, addr2)
+
+type ScreenAddress = (Bit, Bit, Bit, Bit,  Bit, Bit, Bit, Bit,  Bit, Bit, Bit, Bit,  Bit) -- 13 bit address
+type ScreenState = Bus2Way Ram4kState
+type ScreenOutput = State ScreenState Output16
+
+screen :: ScreenAddress -> Input16 -> Load -> ScreenOutput
+screen (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12) input16 load = do
+    screenState <- get
+    let inputBus = dmux16 input16 ram4KSelector
+        loadArr = dmux load ram4KSelector
+
+        memroyFunction = ram4K ram4KMemoryBus
+        
+        nextCycleOutput = operateMemoryMachine memroyFunction inputBus loadArr screenState
+        
+         
+        ram4kOutput = muxRam screenState ram4KSelector
+        ram512Output = mux8WayRam ram4kOutput ram512Selector
+        ram64Output = mux8WayRam ram512Output ram64Selector
+        ram8Output = mux8WayRam ram64Output ram8Selector
+        registerOutput = mux8Way16 ram8Output registerSelector
+
+    put nextCycleOutput
+    pure registerOutput
+    where
+        ram4KMemoryBus = (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11)
+        ram4KSelector = sel12
+        ram512Selector = (sel9, sel10, sel11)
+        ram64Selector = (sel6, sel7, sel8)
+        ram8Selector = (sel3, sel4, sel5)
+        registerSelector = (sel0, sel1, sel2)
+
+type KeyboardOutput = HackWord16
+
+keyboard :: IO KeyboardOutput
+keyboard = (pure . pure) Zero -- no output
 
 -- utility function to load the ROM
 loadROM32K :: ROMAddress -> Input16 -> ROM32kOutput
