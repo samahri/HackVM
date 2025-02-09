@@ -29,6 +29,9 @@ random3BitAddress = do
 one :: HackWord16
 one = toHackWord16 $ replicate 15 Zero <> [One] -- 0000 0000 0000 0001
 
+zeros :: HackWord16
+zeros = toHackWord16 $ replicate 16 Zero
+
 type Ram8State = Bus8Way HackWord16
 randomRam8 :: IO Ram8State
 randomRam8 = toBus8 <$> replicateM 8 random16Bits

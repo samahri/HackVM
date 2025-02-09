@@ -40,7 +40,8 @@ cpu mInput instruction reset = do
     let aluInput = mux16 (aReg, mInput) aluMuxInput
         (outM, zeroFlag, negativeFlag) = alu (dReg, aluInput) aluBits
         aRegInput = mux16 (instruction, outM) controlBit
-        pcNextCycle = execState (pc aReg (placeholder , placeholder, reset)) pcOutput
+        (load, inc) = let result = nand (controlBit, and (jPos, not negativeFlag)) in (not result, result) -- (not result, result) is inc
+        pcNextCycle = execState (pc aReg (load , inc, reset)) pcOutput
         aRegNextCycle = execState (register aRegInput aRegLoad) aReg
         dRegNextCycle = execState (register outM dRegLoad) dReg
 
@@ -50,9 +51,9 @@ cpu mInput instruction reset = do
         controlBit = getOpcode instruction
         (aluMuxInput, aluBits) = getCompBits instruction
         (aRegLoadCInstr, dRegLoadCInstr, memoryWrite) = getDestBit instruction
+        (jNeg, jZero, jPos) = getJumpBits instruction
         aRegLoad = mux (One, aRegLoadCInstr) controlBit
         dRegLoad = mux (Zero, dRegLoadCInstr) controlBit
-        placeholder = Zero
 
 -- ram16K :: RAM16KAddress -> Input16 -> Load -> RAM16kOutput
 -- ram16K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13) input16 load = do
