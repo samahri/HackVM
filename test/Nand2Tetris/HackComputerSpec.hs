@@ -111,5 +111,44 @@ spec = do
 
                     mOutput `shouldBe` initialDRegister 
 
+                it "ALU output the content of the A register" $ do
+                    
+                    mInput <- random16Bits
+                    bit1 <- randomBit
+                    bit2 <- randomBit
+                    
+                    let instruction = HackWord16F (One, One, One, a, c1, c1, c0, c0, c0, c0, bit1, bit2, One, j, j, j)
+
+                    initialDRegister <- random16Bits
+                    initialARegister <- random16Bits
+                    initialPc <- random16Bits
+
+                    let initialState = (initialARegister, initialDRegister, initialPc)
+                    
+                    let (_, mOutput, _, _) = evalState (cpu mInput instruction Zero) initialState
+
+                    mOutput `shouldBe` initialARegister 
+                
+                it "ALU output the content of the M register" $ do
+                    
+                    mInput <- random16Bits
+                    bit1 <- randomBit
+                    bit2 <- randomBit
+
+                    let a1 = One
+                    
+                    let instruction = HackWord16F (One, One, One, a1, c1, c1, c0, c0, c0, c0, bit1, bit2, One, j, j, j)
+
+                    initialDRegister <- random16Bits
+                    initialARegister <- random16Bits
+                    initialPc <- random16Bits
+
+                    let initialState = (initialARegister, initialDRegister, initialPc)
+                    
+                    let (_, mOutput, _, _) = evalState (cpu mInput instruction Zero) initialState
+
+                    mOutput `shouldBe` mInput 
+
+
     specify "ram64K" pending
     specify "hackComputer" pending

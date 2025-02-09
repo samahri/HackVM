@@ -37,7 +37,7 @@ cpu :: MInput -> Instruction -> Reset -> CpuOUtput
 cpu mInput instruction reset = do
     (aReg, dReg, pcOutput) <- get
 
-    let aluInput = mux16 (mInput, aReg) aluMuxInput
+    let aluInput = mux16 (aReg, mInput) aluMuxInput
         (outM, zeroFlag, negativeFlag) = alu (dReg, aluInput) aluBits
         aRegInput = mux16 (instruction, outM) controlBit
         pcNextCycle = execState (pc aReg (placeholder , placeholder, reset)) pcOutput
@@ -63,7 +63,7 @@ getOpcode :: Instruction -> Bit
 getOpcode (HackWord16F (x, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)) = x
 
 getCompBits :: Instruction -> (Bit, (Bit, Bit, Bit, Bit, Bit, Bit))
-getCompBits (HackWord16F (_, _, _, _, c1, c2, c3, c4, c5, c6, _, _, _, _, _, _)) = (c1, (c1, c2, c3, c4, c5, c6))
+getCompBits (HackWord16F (_, _, _, a, c1, c2, c3, c4, c5, c6, _, _, _, _, _, _)) = (a, (c1, c2, c3, c4, c5, c6))
 
 getDestBit :: Instruction -> (Bit, Bit, Bit)
 getDestBit (HackWord16F (_, _, _, _, _, _, _, _, _, _, d1, d2, d3, _, _, _)) = (d1, d2, d3)
