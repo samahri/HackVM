@@ -2,7 +2,8 @@
 module Nand2Tetris.Memory (
     DFF
    ,DFF16
-   ,ROM32kState
+   ,Ram4kState
+   ,Ram16kState
    ,dff
    ,bit
    ,register
@@ -13,9 +14,8 @@ module Nand2Tetris.Memory (
    ,ram16K
    ,pc
    ,rom32K
-   ,screen
-   ,keyboard
    ,loadROM32K
+   , operateMemoryMachine
 ) where
 
 import Nand2Tetris.Types.Bit(Bit(..))
@@ -23,7 +23,7 @@ import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Types.Bus
 import Nand2Tetris.Gates (mux, dMux8Way, dMux8Way16, mux8Way16, dMux4Way, dMux4Way16, muxRam, mux8WayRam, mux4WayRam, dmux, dmux16)
 import Nand2Tetris.Chips (inc16)
-import BasicPrelude ((<$>), IO, (.))
+import BasicPrelude ((<$>), fst, snd, ($))
 import Control.Applicative (Applicative, pure, (<*), liftA2)
 import Control.Monad.Trans.State.Strict (State, get, put, execState)
 
@@ -69,9 +69,9 @@ type DFF16 = State MemoryState Output16
 register :: Input16 -> Load -> DFF16
 register input16 load = do
     registerState <- get
-    let nextCycleOutput = operateMemoryMachine bit input16 (pure load) registerState 
+    let (registerOutput, nextCycleOutput) = operateMemoryMachine bit input16 (pure load) registerState 
     put nextCycleOutput
-    pure registerState
+    pure registerOutput
 
 {-
     RAM8 - 8 x 16 bit RAM
@@ -89,11 +89,11 @@ ram8 addr input16 load = do
     let inputBus = dMux8Way16 input16 addr
         loadArr = dMux8Way load addr
         
-        nextCycleOutput = operateMemoryMachine register inputBus loadArr ram8State
+        (registerOutput, nextCycleOutput) = operateMemoryMachine register inputBus loadArr ram8State
         
-        registerOutput = mux8Way16 ram8State addr
+        ram8Output = mux8Way16 registerOutput addr
     put nextCycleOutput
-    pure registerOutput
+    pure ram8Output
         
 {-
     RAM64 - 64 x 16 bit RAM
@@ -111,16 +111,16 @@ ram64 (sel0, sel1, sel2, sel3, sel4, sel5) input16 load = do
         loadArr = dMux8Way load ram8Selector
         memroyFunction = ram8 ram8MemoryBus
 
-        nextCycleOutput = operateMemoryMachine memroyFunction inputBus loadArr ram64State
+        -- nextCycleOutput = operateMemoryMachine memroyFunction inputBus loadArr ram64State
+        (registerOutput, nextCycleOutput) = operateMemoryMachine memroyFunction inputBus loadArr ram64State
 
-        ram8Output = mux8WayRam ram64State ram8Selector
-        registerOutput = mux8Way16 ram8Output registerSelector
+        ram8Output = mux8WayRam registerOutput ram8Selector
+
     put nextCycleOutput
-    pure registerOutput
+    pure ram8Output
     where
         ram8MemoryBus = (sel0, sel1, sel2)
         ram8Selector = (sel3, sel4, sel5)
-        registerSelector = (sel0, sel1, sel2)
 
 {-
     RAM512 - 512 x 16 bit RAM
@@ -137,19 +137,15 @@ ram512 (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8) input16 load = do
         loadArr = dMux8Way load ram64Selector
         memroyFunction = ram64 ram64MemoryBus
         
-        nextCycleOutput = operateMemoryMachine memroyFunction inputBus loadArr ram512State
+        (registerOutput, nextCycleOutput) = operateMemoryMachine memroyFunction inputBus loadArr ram512State
         
-        ram64Output = mux8WayRam ram512State ram64Selector
-        ram8Output = mux8WayRam ram64Output ram8Selector
-        registerOutput = mux8Way16 ram8Output registerSelector
+        ram64Output = mux8WayRam registerOutput ram64Selector
 
     put nextCycleOutput
-    pure registerOutput
+    pure ram64Output
     where
         ram64MemoryBus = (sel0, sel1, sel2, sel3, sel4, sel5)
         ram64Selector = (sel6, sel7, sel8)
-        ram8Selector = (sel3, sel4, sel5)
-        registerSelector = (sel0, sel1, sel2) -- 
         
           
 {-
@@ -168,21 +164,15 @@ ram4K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11)
         loadArr = dMux8Way load ram512Selector
         memroyFunction = ram512 ram512MemoryBus
         
-        nextCycleOutput = operateMemoryMachine memroyFunction inputBus loadArr ram4KState
+        (registerOutput, nextCycleOutput) = operateMemoryMachine memroyFunction inputBus loadArr ram4KState
         
-        ram512Output = mux8WayRam ram4KState ram512Selector
-        ram64Output = mux8WayRam ram512Output ram64Selector
-        ram8Output = mux8WayRam ram64Output ram8Selector
-        registerOutput = mux8Way16 ram8Output registerSelector
+        ram512Output = mux8WayRam registerOutput ram512Selector
 
     put nextCycleOutput
-    pure registerOutput
+    pure ram512Output
     where
         ram512MemoryBus = (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8)
         ram512Selector = (sel9, sel10, sel11)
-        ram64Selector = (sel6, sel7, sel8)
-        ram8Selector = (sel3, sel4, sel5) 
-        registerSelector = (sel0, sel1, sel2) 
 
 {-
     RAM16K - 16384 x 16 bit RAM
@@ -200,23 +190,15 @@ ram16K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11
 
         memroyFunction = ram4K ram4KMemoryBus
         
-        nextCycleOutput = operateMemoryMachine memroyFunction inputBus loadArr ram16KState
+        (registerOutput, nextCycleOutput) = operateMemoryMachine memroyFunction inputBus loadArr ram16KState
         
-        ram4kOutput = mux4WayRam ram16KState ram4KSelector
-        ram512Output = mux8WayRam ram4kOutput ram512Selector
-        ram64Output = mux8WayRam ram512Output ram64Selector
-        ram8Output = mux8WayRam ram64Output ram8Selector
-        registerOutput = mux8Way16 ram8Output registerSelector
+        ram4kOutput = mux4WayRam registerOutput ram4KSelector
 
     put nextCycleOutput
-    pure registerOutput
+    pure ram4kOutput
     where
         ram4KMemoryBus = (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11)
         ram4KSelector = (sel12, sel13)
-        ram512Selector = (sel9, sel10, sel11)
-        ram64Selector = (sel6, sel7, sel8)
-        ram8Selector = (sel3, sel4, sel5)
-        registerSelector = (sel0, sel1, sel2)
 
 {-
     Program Counter
@@ -270,42 +252,6 @@ rom32K (HackWord16F (addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, add
         ram8Selector = (addr3, addr4, addr5)
         registerSelector = (addr0, addr1, addr2)
 
-type ScreenAddress = (Bit, Bit, Bit, Bit,  Bit, Bit, Bit, Bit,  Bit, Bit, Bit, Bit,  Bit) -- 13 bit address
-type ScreenState = Bus2Way Ram4kState
-type ScreenOutput = State ScreenState Output16
-
-screen :: ScreenAddress -> Input16 -> Load -> ScreenOutput
-screen (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12) input16 load = do
-    screenState <- get
-    let inputBus = dmux16 input16 ram4KSelector
-        loadArr = dmux load ram4KSelector
-
-        memroyFunction = ram4K ram4KMemoryBus
-        
-        nextCycleOutput = operateMemoryMachine memroyFunction inputBus loadArr screenState
-        
-         
-        ram4kOutput = muxRam screenState ram4KSelector
-        ram512Output = mux8WayRam ram4kOutput ram512Selector
-        ram64Output = mux8WayRam ram512Output ram64Selector
-        ram8Output = mux8WayRam ram64Output ram8Selector
-        registerOutput = mux8Way16 ram8Output registerSelector
-
-    put nextCycleOutput
-    pure registerOutput
-    where
-        ram4KMemoryBus = (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11)
-        ram4KSelector = sel12
-        ram512Selector = (sel9, sel10, sel11)
-        ram64Selector = (sel6, sel7, sel8)
-        ram8Selector = (sel3, sel4, sel5)
-        registerSelector = (sel0, sel1, sel2)
-
-type KeyboardOutput = HackWord16
-
-keyboard :: IO KeyboardOutput
-keyboard = (pure . pure) Zero -- no output
-
 -- utility function to load the ROM
 loadROM32K :: ROMAddress -> Input16 -> ROM32kOutput
 loadROM32K (HackWord16F (addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8, addr9, addr10, addr11, addr12, addr13, addr14, _)) input16 = do
@@ -316,27 +262,24 @@ loadROM32K (HackWord16F (addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7,
 
         memroyFunction = ram16K ram16KMemoryBus
         
-        nextCycleOutput = operateMemoryMachine memroyFunction inputBus loadArr rom32KState
+        (registerOutput, nextCycleOutput) = operateMemoryMachine memroyFunction inputBus loadArr rom32KState
 
-        ram16KOutput = muxRam rom32KState addr14 
-        ram4kOutput = mux4WayRam ram16KOutput ram4KSelector
-        ram512Output = mux8WayRam ram4kOutput ram512Selector
-        ram64Output = mux8WayRam ram512Output ram64Selector
-        ram8Output = mux8WayRam ram64Output ram8Selector
-        registerOutput = mux8Way16 ram8Output registerSelector
+        ram16KOutput = muxRam registerOutput addr14 
+        -- ram4kOutput = mux4WayRam ram16KOutput ram4KSelector
+        -- ram512Output = mux8WayRam ram4kOutput ram512Selector
+        -- ram64Output = mux8WayRam ram512Output ram64Selector
+        -- ram8Output = mux8WayRam ram64Output ram8Selector
+        -- registerOutput = mux8Way16 ram8Output registerSelector
 
     put nextCycleOutput
-    pure registerOutput
+    pure ram16KOutput
     where
         ram16KMemoryBus = (addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8, addr9, addr10, addr11, addr12, addr13) 
-        ram4KSelector = (addr12, addr13)
-        ram512Selector = (addr9, addr10, addr11)
-        ram64Selector = (addr6, addr7, addr8)
-        ram8Selector = (addr3, addr4, addr5)
-        registerSelector = (addr0, addr1, addr2)
 
-operateMemoryMachine :: forall s a f. Applicative f => (a -> Load -> State s a) -> f a -> f Load -> f s -> f s
-operateMemoryMachine memoryUnit inputBus loadBus = liftA2 execState memoryBus
+operateMemoryMachine :: forall s a f. Applicative f => (a -> Load -> State s a) -> f a -> f Load -> f s -> (f a, f s)
+operateMemoryMachine memoryUnit inputBus loadBus memState = sequence $ liftA2 runState memoryBus memState -- f (s, a)
     where
         memoryBus :: f (State s a)
         memoryBus = liftA2 memoryUnit inputBus loadBus
+        sequence :: f (a, s) -> (f a, f s)
+        sequence z = (fst <$> z, snd <$> z)
