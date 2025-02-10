@@ -68,7 +68,6 @@ spec = do
     context "program counter" $ do
 
         it "initializes to zeros" $ replicateM_ 40 $ do
-            let zeros = pure Zero
 
             inputbits <- random16Bits
             initialBits <- random16Bits

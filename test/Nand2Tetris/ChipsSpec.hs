@@ -13,7 +13,6 @@ import Data.List (replicate)
 spec :: Spec
 spec = do
     let ones = pure One 
-        zeros = pure Zero
         two = toHackWord16 $ replicate 14 Zero <> [One, Zero]
         neg2 = toHackWord16 $ replicate 15 One <> [Zero] -- 1111 1111 1111 1110
         num255 = toHackWord16 $ replicate 8 Zero <> replicate 8 One -- 0000 0000 1111 1111

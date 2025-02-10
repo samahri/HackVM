@@ -15,7 +15,6 @@ import Data.List (take, cycle)
 spec :: Spec
 spec = do
     let ones = pure One 
-        zeros = pure Zero
     specify "nand gate" $ do
         nand (One, One)   `shouldBe` Zero
         nand (One, Zero)  `shouldBe` One

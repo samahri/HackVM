@@ -37,10 +37,15 @@ cpu :: MInput -> Instruction -> Reset -> CpuOUtput
 cpu mInput instruction reset = do
     (aReg, dReg, pcOutput) <- get
 
-    let aluInput = mux16 (aReg, mInput) aluMuxInput
-        (outM, zeroFlag, negativeFlag) = alu (dReg, aluInput) aluBits
-        aRegInput = mux16 (instruction, outM) controlBit
-        (load, inc) = let result = nand (controlBit, and (jPos, not negativeFlag)) in (not result, result) -- (not result, result) is inc
+    let aluInput = mux16 (aReg, mInput) aluMuxInputCtrl
+        (outM, zeroFlag, negativeFlag) = alu (dReg, aluInput) aluCtrl
+        aRegInput = mux16 (instruction, outM) aRegInputMuxControlBit
+        condZero = and (jZero, and (not negativeFlag, zeroFlag))
+        condNeg = and (jNeg, and (negativeFlag, not zeroFlag))
+        condPos = and (jPos, and (not negativeFlag, not zeroFlag ))
+        unCond = and (jNeg, and (jPos, jZero ))
+        jumpLogic = or (or (condZero, condNeg), or (condPos, unCond))
+        (load, inc) = let result = and (aRegInputMuxControlBit, jumpLogic) in (result, not result) -- (result, not result) is inc
         pcNextCycle = execState (pc aReg (load , inc, reset)) pcOutput
         aRegNextCycle = execState (register aRegInput aRegLoad) aReg
         dRegNextCycle = execState (register outM dRegLoad) dReg
@@ -48,12 +53,15 @@ cpu mInput instruction reset = do
     put (aRegNextCycle, dRegNextCycle, pcNextCycle)
     pure (aReg, outM, memoryWrite, pcOutput)
     where
-        controlBit = getOpcode instruction
-        (aluMuxInput, aluBits) = getCompBits instruction
-        (aRegLoadCInstr, dRegLoadCInstr, memoryWrite) = getDestBit instruction
+        -- control bits
+        aRegInputMuxControlBit = getOpcode instruction
+        (aluMuxInputCtrl, aluCtrl) = getCompBits instruction
+        (aRegLoadCtrl, dRegLoadCtrl, memoryWrite) = getDestBit instruction
         (jNeg, jZero, jPos) = getJumpBits instruction
-        aRegLoad = mux (One, aRegLoadCInstr) controlBit
-        dRegLoad = mux (Zero, dRegLoadCInstr) controlBit
+
+        aRegLoad = mux (One, aRegLoadCtrl) aRegInputMuxControlBit
+        dRegLoad = mux (Zero, dRegLoadCtrl) aRegInputMuxControlBit
+
 
 -- ram16K :: RAM16KAddress -> Input16 -> Load -> RAM16kOutput
 -- ram16K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13) input16 load = do
