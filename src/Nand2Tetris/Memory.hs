@@ -4,6 +4,7 @@ module Nand2Tetris.Memory (
    ,DFF16
    ,Ram4kState
    ,Ram16kState
+   ,ROM32kState
    ,dff
    ,bit
    ,register
@@ -25,7 +26,7 @@ import Nand2Tetris.Gates (mux, dMux8Way, dMux8Way16, mux8Way16, dMux4Way, dMux4W
 import Nand2Tetris.Chips (inc16)
 import BasicPrelude ((<$>), fst, snd, ($))
 import Control.Applicative (Applicative, pure, (<*), liftA2)
-import Control.Monad.Trans.State.Strict (State, get, put, execState)
+import Control.Monad.Trans.State.Strict (State, get, put, runState)
 
 type Input = Bit
 type Output = Bit
@@ -111,7 +112,6 @@ ram64 (sel0, sel1, sel2, sel3, sel4, sel5) input16 load = do
         loadArr = dMux8Way load ram8Selector
         memroyFunction = ram8 ram8MemoryBus
 
-        -- nextCycleOutput = operateMemoryMachine memroyFunction inputBus loadArr ram64State
         (registerOutput, nextCycleOutput) = operateMemoryMachine memroyFunction inputBus loadArr ram64State
 
         ram8Output = mux8WayRam registerOutput ram8Selector
@@ -265,11 +265,6 @@ loadROM32K (HackWord16F (addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7,
         (registerOutput, nextCycleOutput) = operateMemoryMachine memroyFunction inputBus loadArr rom32KState
 
         ram16KOutput = muxRam registerOutput addr14 
-        -- ram4kOutput = mux4WayRam ram16KOutput ram4KSelector
-        -- ram512Output = mux8WayRam ram4kOutput ram512Selector
-        -- ram64Output = mux8WayRam ram512Output ram64Selector
-        -- ram8Output = mux8WayRam ram64Output ram8Selector
-        -- registerOutput = mux8Way16 ram8Output registerSelector
 
     put nextCycleOutput
     pure ram16KOutput

@@ -48,6 +48,9 @@ type Ram4KState = Bus8Way Ram512State
 randomRam4K :: IO Ram4KState
 randomRam4K = toBus8 <$> replicateM 8 randomRam512
 
+randomRam8K :: IO (Bus2Way Ram4KState)
+randomRam8K = toBus2 <$> replicateM 2 randomRam4K
+
 type Ram16KState = Bus4Way Ram4KState
 randomRam16K :: IO Ram16KState
 randomRam16K = toBus4 <$> replicateM 4 randomRam4K
