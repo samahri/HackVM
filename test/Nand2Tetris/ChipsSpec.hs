@@ -52,30 +52,30 @@ spec = do
     
     specify "ALU" $ do
         -- a = 0; c = 101010
-        alu (zeros, ones) (One, Zero, One, Zero, One, Zero)     `shouldBe` (zeros, One, Zero)           
+        alu (zeros, ones) (AluCtrl {zx = One, nx = Zero, zy = One, ny = Zero, f = One, no = Zero})     `shouldBe` (zeros, One, Zero)           
 
         -- zx=1, nx=1, zy=1, ny=1, f=1, no=1 -> 1
-        alu (zeros, ones) (One, One, One, One, One, One)        `shouldBe` (one, Zero, Zero)       
+        alu (zeros, ones) (AluCtrl {zx = One, nx = One,  zy =One,  ny = One, f = One, no = One})      `shouldBe` (one, Zero, Zero)       
 
-        -- zx=1, nx=1, zy=1, ny=0, f=1, no=0 -> -1        
-        alu (num255, num255) (One, One, One, Zero, One, Zero)   `shouldBe` (ones, Zero, One)        
+        --       
+        alu (num255, num255) (AluCtrl {zx = One, nx = One,  zy =One, ny = Zero, f = One, no =Zero})   `shouldBe` (ones, Zero, One)        
         
-        alu (num255, zeros)  (Zero, Zero, One, One, Zero, Zero)   `shouldBe` (num255, Zero, Zero)  -- zx=0, nx=0, zy=1, ny=1, f=0, no=0 -> x
+        alu (num255, zeros)  (AluCtrl {zx = Zero, nx = Zero, zy = One, ny = One, f = Zero, no = Zero})   `shouldBe` (num255, Zero, Zero)  -- zx=0, nx=0, zy=1, ny=1, f=0, no=0 -> x
         
         -- 
-        alu (zeros, num255)  (One, One, Zero, Zero, Zero, Zero)   `shouldBe` (num255, Zero, Zero)  -- zx=1, nx=1, zy=0, ny=0, f=0, no=0 -> y
-        alu (one, zeros)     (Zero, Zero, One, One, Zero, One)    `shouldBe` (neg2, Zero, One)  -- zx=0, nx=0, zy=1, ny=1, f=0, no=1 -> NOT x
-        alu (zeros, num255)  (One, One, Zero, Zero, Zero, One)    `shouldBe` (neg256, Zero, One)  -- zx=1, nx=1, zy=0, ny=0, f=0, no=1 -> NOT y
-        alu (one, zeros)     (Zero, Zero, One, One, One, One)     `shouldBe` (ones, Zero, One)     -- zx=0, nx=0, zy=1, ny=1, f=1, no=1 -> -x
-        alu (zeros, one)     (One, One, Zero, Zero, One, One)     `shouldBe` (ones, Zero, One)     -- zx=1, nx=1, zy=0, ny=0, f=1, no=1 -> -y
-        alu (zeros, zeros)   (Zero, One, One, One, One, One)      `shouldBe` (one, Zero, Zero)    -- zx=0, nx=1, zy=1, ny=1, f=1, no=1 -> x + 1
-        alu (zeros, one)     (One, One, Zero, One, One, One)      `shouldBe` (two, Zero, Zero)    -- zx=1, nx=1, zy=0, ny=1, f=1, no=1 -> y + 1
-        alu (one, ones)      (Zero, Zero, One, One, One, Zero)    `shouldBe` (zeros, One, Zero)    -- zx=0, nx=0, zy=1, ny=1, f=1, no=0 -> x - 1
-        alu (zeros, ones)    (One, One, Zero, Zero, One, Zero)    `shouldBe` (neg2, Zero, One)    -- zx=1, nx=1, zy=0, ny=0, f=1, no=0 -> y - 1
-        alu (one, one)       (Zero, Zero, Zero, Zero, One, Zero)  `shouldBe` (two, Zero, Zero) -- zx=0, nx=0, zy=0, ny=0, f=1, no=0 -> x + y
-        alu (one, one)       (Zero, One, Zero, Zero, One, One)    `shouldBe` (zeros, One, Zero)    -- zx=0, nx=1, zy=0, ny=0, f=1, no=1 -> x - y
-        alu (num255, ones)   (Zero, Zero, Zero, Zero, Zero, Zero) `shouldBe` (num255, Zero, Zero) -- zx=0, nx=0, zy=0, ny=0, f=0, no=0 -> x AND y
-        alu (num255, neg256) (Zero, One, Zero, One, Zero, One)    `shouldBe` (ones, Zero, One)   -- zx=0, nx=1, zy=0, ny=1, f=0, no=1 -> x OR y
+        alu (zeros, num255)  (AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = Zero, no = Zero})   `shouldBe` (num255, Zero, Zero)  -- zx=1, nx=1, zy=0, ny=0, f=0, no=0 -> y
+        alu (one, zeros)     (AluCtrl {zx = Zero, nx = Zero, zy = One, ny = One, f = Zero,no = One})    `shouldBe` (neg2, Zero, One)  -- zx=0, nx=0, zy=1, ny=1, f=0, no=1 -> NOT x
+        alu (zeros, num255)  (AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = Zero, no = One})    `shouldBe` (neg256, Zero, One)  -- zx=1, nx=1, zy=0, ny=0, f=0, no=1 -> NOT y
+        alu (one, zeros)     (AluCtrl {zx = Zero, nx = Zero, zy = One, ny = One, f = One, no = One})    `shouldBe` (ones, Zero, One)     -- zx=0, nx=0, zy=1, ny=1, f=1, no=1 -> -x
+        alu (zeros, one)     (AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = One, no = One})     `shouldBe` (ones, Zero, One)     -- zx=1, nx=1, zy=0, ny=0, f=1, no=1 -> -y
+        alu (zeros, zeros)   (AluCtrl {zx = Zero, nx = One,  zy =One,  ny =One,  f = One, no = One})    `shouldBe` (one, Zero, Zero)    -- zx=0, nx=1, zy=1, ny=1, f=1, no=1 -> x + 1
+        alu (zeros, one)     (AluCtrl {zx = One, nx = One,  zy =Zero, ny = One,  f = One, no = One})     `shouldBe` (two, Zero, Zero)    -- zx=1, nx=1, zy=0, ny=1, f=1, no=1 -> y + 1
+        alu (one, ones)      (AluCtrl {zx = Zero, nx = Zero, zy = One, ny = One, f = One, no = Zero})    `shouldBe` (zeros, One, Zero)    -- zx=0, nx=0, zy=1, ny=1, f=1, no=0 -> x - 1
+        alu (zeros, ones)    (AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = One, no = Zero})    `shouldBe` (neg2, Zero, One)    -- zx=1, nx=1, zy=0, ny=0, f=1, no=0 -> y - 1
+        alu (one, one)       (AluCtrl {zx = Zero, nx = Zero, zy = Zero, ny = Zero,f =  One, no = Zero})  `shouldBe` (two, Zero, Zero) -- zx=0, nx=0, zy=0, ny=0, f=1, no=0 -> x + y
+        alu (one, one)       (AluCtrl {zx = Zero, nx = One,  zy =Zero, ny = Zero, f = One, no = One})    `shouldBe` (zeros, One, Zero)    -- zx=0, nx=1, zy=0, ny=0, f=1, no=1 -> x - y
+        alu (num255, ones)   (AluCtrl {zx = Zero, nx = Zero, zy = Zero, ny = Zero,f =  Zero, no = Zero}) `shouldBe` (num255, Zero, Zero) --  x AND y
+        alu (num255, neg256) (AluCtrl {zx = Zero, nx = One,  zy =Zero, ny = One, f = Zero,no = One})    `shouldBe` (ones, Zero, One)   -- x OR y
 
 
 

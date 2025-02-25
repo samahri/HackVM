@@ -3,9 +3,10 @@ module Nand2Tetris.TestUtil where
 import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Types.Bit
 import Nand2Tetris.Types.Bus
+import Nand2Tetris.Chips
 import Nand2Tetris.Utils
-import BasicPrelude (IO, Int, replicateM, (<$>), (+), (^), (==), mod, foldr, fst, ($), (<>), pure, replicate)
-import System.Random (randomIO)
+import BasicPrelude (IO, Int, replicateM, (<$>), (+), (^), (==), mod, foldr, fst, ($), (<>), pure, replicate, (!!), (-), length)
+import System.Random (randomIO, randomRIO)
 
 randomBit :: IO Bit
 randomBit = randomIO
@@ -66,3 +67,47 @@ convertToInt input = fst (foldr func (0, 0) (toList input)) `mod` 256
     where
         func :: Bit -> (Int, Int) -> (Int, Int)
         func b (total, acc) = if b == Zero then (total, acc + 1) else (total + 2^acc, acc + 1)
+
+getRandomAluCtrl :: IO (Bit, AluCtrl)
+getRandomAluCtrl = do
+    index <- randomRIO (0, length aluCtrls - 1)
+    pure (aluCtrls !! index)
+
+aluCtrls :: [(Bit, AluCtrl)]
+aluCtrls = [  (Zero, AluCtrl {zx = One, nx = Zero, zy = One, ny = Zero, f = One, no = Zero}),
+              (Zero, AluCtrl {zx = One, nx = One,  zy =One,  ny = One, f = One, no = One}),
+              (Zero, AluCtrl {zx = One, nx = One,  zy =One, ny = Zero, f = One, no = Zero}),
+              (Zero, AluCtrl {zx = Zero, nx = Zero, zy = One, ny = One, f = Zero, no = Zero}),
+
+              (Zero, AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = Zero, no = Zero}),
+              (One , AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = Zero, no = Zero}),  
+
+              (Zero, AluCtrl {zx = Zero, nx = Zero, zy = One, ny = One, f = Zero,no = One})  ,  
+
+              (Zero, AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = Zero, no = One}) ,  
+              (One, AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = Zero, no = One}) ,  
+
+              (Zero, AluCtrl {zx = Zero, nx = Zero, zy = One, ny = One, f = One, no = One})   , 
+
+              (Zero, AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = One, no = One})   , 
+              (One, AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = One, no = One})   , 
+
+              (Zero, AluCtrl {zx = Zero, nx = One,  zy =One,  ny =One,  f = One, no = One})   , 
+
+              (Zero, AluCtrl {zx = One, nx = One,  zy =Zero, ny = One,  f = One, no = One})   , 
+              (One, AluCtrl {zx = One, nx = One,  zy =Zero, ny = One,  f = One, no = One})   , 
+
+              (Zero, AluCtrl {zx = Zero, nx = Zero, zy = One, ny = One, f = One, no = Zero})  , 
+
+              (Zero, AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = One, no = Zero})  , 
+              (Zero, AluCtrl {zx = Zero, nx = Zero, zy = Zero, ny = Zero,f =  One, no = Zero}), 
+              (Zero, AluCtrl {zx = Zero, nx = One,  zy =Zero, ny = Zero, f = One, no = One})  , 
+              (Zero, AluCtrl {zx = Zero, nx = Zero, zy = Zero, ny = Zero,f =  Zero, no = Zero}),
+              (Zero, AluCtrl {zx = Zero, nx = One,  zy =Zero, ny = One, f = Zero,no = One}),    
+              
+              (One, AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = One, no = Zero})  , 
+              (One, AluCtrl {zx = Zero, nx = Zero, zy = Zero, ny = Zero,f =  One, no = Zero}), 
+              (One, AluCtrl {zx = Zero, nx = One,  zy =Zero, ny = Zero, f = One, no = One})  , 
+              (One, AluCtrl {zx = Zero, nx = Zero, zy = Zero, ny = Zero,f =  Zero, no = Zero}),
+              (One, AluCtrl {zx = Zero, nx = One,  zy =Zero, ny = One, f = Zero,no = One})    
+            ]

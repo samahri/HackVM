@@ -33,10 +33,10 @@ type DRegister = HackWord16
 type PCRegister = HackWord16
 
 type CpuRegisters = (ARegister, DRegister, PCRegister)
-type CpuState = (MAddress, MOutput, MWrite, PCOutput)
-type CpuOUtput = State CpuRegisters CpuState 
+type CpuOutput = (MAddress, MOutput, MWrite, PCOutput)
+type CpuState = State CpuRegisters CpuOutput 
 
-cpu :: MInput -> Instruction -> Reset -> CpuOUtput
+cpu :: MInput -> Instruction -> Reset -> CpuState
 cpu mInput instruction reset = do
     (aReg, dReg, pcOutput) <- get
 
@@ -133,8 +133,8 @@ getPCCtrl instruction zeroFlag negativeFlag = (result, not result)
 getOpcode :: Instruction -> Bit
 getOpcode (HackWord16F (x, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)) = x
 
-getCompBits :: Instruction -> (Bit, (Bit, Bit, Bit, Bit, Bit, Bit))
-getCompBits (HackWord16F (_, _, _, a, c1, c2, c3, c4, c5, c6, _, _, _, _, _, _)) = (a, (c1, c2, c3, c4, c5, c6))
+getCompBits :: Instruction -> (Bit, AluCtrl)
+getCompBits (HackWord16F (_, _, _, a, c1, c2, c3, c4, c5, c6, _, _, _, _, _, _)) = (a, AluCtrl {zx = c1, nx = c2, zy = c3, ny = c4, f = c5, no = c6})
 
 getDestBit :: Instruction -> (Bit, Bit, Bit)
 getDestBit (HackWord16F (_, _, _, _, _, _, _, _, _, _, d1, d2, d3, _, _, _)) = (d1, d2, d3)

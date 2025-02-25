@@ -1,5 +1,6 @@
 module Nand2Tetris.Chips (
-    halfAdder
+    AluCtrl(..)
+   ,halfAdder
    ,fullAdder
    ,add16
    ,inc16
@@ -13,6 +14,8 @@ import Nand2Tetris.Types.Bus
 import BasicPrelude ((==), ($), error)
 import Data.List (reverse, replicate)
 import Data.List.NonEmpty (head, fromList)
+
+data AluCtrl = AluCtrl {zx :: Zx, nx :: Nx, zy :: Zy, ny :: Ny, f :: F, no :: No}
 
 type Input16 = HackWord16
 type Output16 = HackWord16
@@ -59,25 +62,24 @@ type Zy = Bit
 type Ny = Bit
 type F = Bit
 type No = Bit
-type AluCtrl = (Zx, Nx, Zy, Ny, F, No)
 
 type Zr = Bit
 type Ng = Bit
 
 alu :: (Input16, Input16) -> AluCtrl -> (Output16, Zr, Ng)
-alu (x16, y16) (zx, nx, zy, ny, f, no) = (out, zr, ng)
+alu (x16, y16) aluCtrl = (out, zr, ng)
     where
         zeroBits :: Output16
         zeroBits = toHackWord16 $ replicate 16 Zero
 
         out :: Output16
-        out = mux4Way16 (Bus4Way (and16 (x,y), add16 (x,y), not16 $ and16 (x,y), not16 $ add16 (x,y))) (no, f)
+        out = mux4Way16 (Bus4Way (and16 (x,y), add16 (x,y), not16 $ and16 (x,y), not16 $ add16 (x,y))) (no aluCtrl, f aluCtrl)
             where
                 x :: HackWord16
-                x = mux4Way16 (Bus4Way (x16, zeroBits, not16 x16, not16 zeroBits)) (nx, zx)
+                x = mux4Way16 (Bus4Way (x16, zeroBits, not16 x16, not16 zeroBits)) (nx aluCtrl, zx aluCtrl)
 
                 y :: HackWord16
-                y = mux4Way16 (Bus4Way (y16, zeroBits, not16 y16, not16 zeroBits)) (ny, zy)
+                y = mux4Way16 (Bus4Way (y16, zeroBits, not16 y16, not16 zeroBits)) (ny aluCtrl, zy aluCtrl)
         
         zr :: Zr
         zr = if out == zeroBits then One else Zero
