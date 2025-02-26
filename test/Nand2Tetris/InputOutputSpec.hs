@@ -6,7 +6,7 @@ import Nand2Tetris.Types.Bit(Bit(One, Zero))
 import Nand2Tetris.TestUtil
 import Nand2Tetris.InputOutput
 import Control.Monad.Trans.State.Strict (evalState)
-import BasicPrelude (($), (>>), IO, pure, (==), mod, (+))
+import BasicPrelude (($), (>>), pure, (==))
 -- import Nand2Tetris.Memory
 import Test.Hspec
 import Control.Monad (replicateM_)

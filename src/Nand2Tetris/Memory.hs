@@ -235,7 +235,7 @@ type ROM32kState = Bus2Way Ram16kState
 type ROM32kOutput = State ROM32kState Output16
 
 rom32K :: ROMAddress -> ROM32kOutput
-rom32K (HackWord16F (addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8, addr9, addr10, addr11, addr12, addr13, addr14, _)) = do
+rom32K (HackWord16F (_, addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8, addr9, addr10, addr11, addr12, addr13, addr14)) = do
     rom32KState <- get
     let ram16KOutput = muxRam rom32KState addr14
         ram4kOutput = mux4WayRam ram16KOutput ram4KSelector

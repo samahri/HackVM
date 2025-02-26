@@ -57,8 +57,8 @@ randomRam16K :: IO Ram16KState
 randomRam16K = toBus4 <$> replicateM 4 randomRam4K
 
 type ROM32kState = Bus2Way Ram16KState
-randomRom32K :: IO ROM32kState
-randomRom32K = toBus2 <$> replicateM 2 randomRam16K 
+random32KMemory :: IO ROM32kState
+random32KMemory = toBus2 <$> replicateM 2 randomRam16K 
 
 
 -- TODO: make HackWord16 Foldable

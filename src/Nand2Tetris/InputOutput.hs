@@ -2,6 +2,7 @@ module Nand2Tetris.InputOutput(
     screen
     , ScreenAddress
     , ScreenState
+    , KeyboardIO
     , keyboard
 ) where
 
@@ -42,6 +43,7 @@ screen (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, s
         ram4KSelector = (sel12, sel13)
 
 type KeyboardOutput = HackWord16
+type KeyboardIO = IO
 
-keyboard :: IO KeyboardOutput
+keyboard :: KeyboardIO KeyboardOutput
 keyboard = (pure . pure) Zero -- no output

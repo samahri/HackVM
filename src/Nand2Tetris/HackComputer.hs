@@ -2,7 +2,7 @@
 module Nand2Tetris.HackComputer (
     cpu
     , mainMemory
-    -- , hackComputer
+    , hackComputer
 ) where
 
 import Nand2Tetris.Types.Bit
@@ -12,7 +12,7 @@ import Nand2Tetris.InputOutput
 import Nand2Tetris.Chips
 import Nand2Tetris.Gates
 import Nand2Tetris.Types.Bus
-import Control.Monad.Trans.State.Strict (State, StateT, get, put, execState)
+import Control.Monad.Trans.State.Strict (State, StateT, get, put, execState, runState, runStateT)
 import BasicPrelude (pure, IO, (==))
 import Control.Monad.IO.Class (liftIO)
 
@@ -79,7 +79,7 @@ type Load = Bit
 type MemoryAddress = HackWord16 -- 15 bit address
 type MemoryState = Bus2Way Ram16kState
 
-type MemoryOutput = StateT MemoryState (StateT Ram16kState IO) Output16
+type MemoryOutput = StateT MemoryState (StateT Ram16kState KeyboardIO) Output16
 
 mainMemory :: MemoryAddress -> Input16 -> Load -> MemoryOutput
 mainMemory (HackWord16F (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13, sel14, sel15) )input16 load = do
@@ -110,12 +110,26 @@ mainMemory (HackWord16F (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9
         ram16KSelector = sel1
         screenSelector = sel2
 
-type ComputerMemory = (MemoryState, ROM32kState)
-type ComputerOutput = StateT ComputerMemory IO ()
+type CpuInstruction = HackWord16
+type CpuInput = HackWord16
 
--- hackComputer :: Reset -> ComputerOutput
--- hackComputer reset = _
---     -- fetch execute loop
+type ComputerState = (MemoryState, Ram16kState, ROM32kState, CpuRegisters, CpuInstruction, CpuInput)
+type ComputerOutput = StateT ComputerState IO ()
+
+hackComputer :: Reset -> ComputerOutput
+hackComputer reset = do
+    (memoryState, ramState, romState, cpuReg, instruction, input) <- get
+    
+    let ((mAddress, mOutput, mWrite, pcOutput), newCpuState) = runState (cpu input instruction reset) cpuReg
+        (nextInstruction, newRomState) = runState (rom32K pcOutput) romState
+        
+        innerRamState = (mainMemory mAddress mOutput mWrite `runStateT` memoryState) `runStateT` ramState
+
+    ((nextInput, newMemoryState), newRamState) <- liftIO innerRamState
+
+    put (newMemoryState, newRamState, newRomState, newCpuState, nextInstruction, nextInput)
+
+    pure ()
     
 getPCCtrl :: Instruction -> Bit -> Bit -> (Bit, Bit)
 getPCCtrl instruction zeroFlag negativeFlag = (result, not result)
