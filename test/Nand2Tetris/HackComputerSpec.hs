@@ -52,7 +52,7 @@ spec = do
 
             pcReg `shouldBe` zeros
         
-        it "Writes the content to A Register to writeM" $ do
+        it "Writes the content of A Register to writeM" $ do
             mInput <- random16Bits
 
             instruction <- randomInstruction
@@ -65,7 +65,7 @@ spec = do
             
             let (mAddress, _, _, _) = evalState (cpu mInput instruction One) initialState
 
-            mAddress `shouldBe` initialARegister 
+            mAddress `shouldBe` initialARegister
 
         context "implements an A-instruction" $ do
             
@@ -473,7 +473,7 @@ spec = do
             initialCpuInstruction <- random16Bits
             cpuInput <- random16Bits
             memoryState <- random32KMemory
-            ram16kState <- randomRam16K
+            screenState <- randomRam16K
             rom32kState <- random32KMemory
 
             initialDRegister <- random16Bits
@@ -483,7 +483,7 @@ spec = do
             bit <- randomBit
 
             -- type ComputerState = (MemoryState, Ram16kState, ROM32kState, CpuRegisters, CpuInstruction, CpuInput)
-            let initialState = (memoryState, ram16kState, rom32kState, (initialARegister, initialDRegister, initialPc), initialCpuInstruction, cpuInput)
+            let initialState = (memoryState, screenState, rom32kState, (initialARegister, initialDRegister, initialPc), initialCpuInstruction, cpuInput)
                 address0 = pure Zero :: HackWord16
                 romValAtAddr0 = evalState (rom32K address0) rom32kState
             
@@ -517,7 +517,7 @@ spec = do
             
             let initialState = (memoryState, ram16kState, rom32kState, (initialARegister, initialDRegister, initialPc), cpuInstruction, initialCpuInput)
             
-            memoryOutput <- (mainMemory addressM randomInput loadBit `evalStateT` memoryState) `evalStateT` ram16kState
+            memoryOutput <- mainMemory addressM randomInput loadBit `evalStateT` (memoryState, ram16kState)
 
             (_, _, _, _, _, cpuInput) <- execStateT (hackComputer Zero) initialState
 

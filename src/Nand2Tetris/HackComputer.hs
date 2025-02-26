@@ -1,6 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+}
 module Nand2Tetris.HackComputer (
-    cpu
+    HackComputer
+    , ComputerState
+    , cpu
     , mainMemory
     , hackComputer
 ) where
@@ -12,10 +15,10 @@ import Nand2Tetris.InputOutput
 import Nand2Tetris.Chips
 import Nand2Tetris.Gates
 import Nand2Tetris.Types.Bus
+
 import Control.Monad.Trans.State.Strict (State, StateT, get, put, execState, runState, runStateT)
 import BasicPrelude (pure, (==))
 import Control.Monad.IO.Class (liftIO)
-
 
 type CPUInstruction = HackWord16 -- value read from ROM
 type MInput = HackWord16 -- value read from RAM (M register or RAM[A])
@@ -74,11 +77,11 @@ cpu mInput instruction reset = do
 type MemoryAddress = HackWord16 -- 15 bit address
 type MemoryState = Bus2Way RAM16kState
 
-type MainMemory = StateT MemoryState (StateT ScreenState KeyboardIO) Output16
+type MainMemory = StateT (MemoryState, ScreenState) KeyboardIO Output16
 
 mainMemory :: MemoryAddress -> Input16 -> Load -> MainMemory
 mainMemory (HackWord16F (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13, sel14, sel15) )input16 load = do
-    memoryState <- get
+    (memoryState, screenState) <- get
     
     let inputBus = dmux16 input16 ram16KSelector
         loadArr = dmux load ram16KSelector
@@ -87,15 +90,16 @@ mainMemory (HackWord16F (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9
         if ram16KSelector == Zero then do
             let memroyFunction = ram16K ram16KMemoryBus
                 (output, newState) = operateMemoryMachine memroyFunction inputBus loadArr memoryState
-            pure (muxRam output ram16KSelector, newState)
+            pure (muxRam output ram16KSelector, (newState, screenState))
         else 
             if screenSelector == Zero then do
                 let memroyFunction = screen screenBus
                     (output, newState) = operateMemoryMachine memroyFunction inputBus loadArr memoryState 
-                pure (muxRam output ram16KSelector, newState)
+                pure (muxRam output ram16KSelector, (newState, screenState))
             else do
                 kb <- liftIO keyboard
-                pure (kb, memoryState)
+                print kb
+                pure (kb, (memoryState, screenState))
 
     put nextCycleOutput
     pure registerOutput
@@ -108,18 +112,19 @@ mainMemory (HackWord16F (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9
 type CPUInput = MInput
 
 type ComputerState = (MemoryState, ScreenState, ROM32kState, CPURegisters, CPUInstruction, CPUInput)
-type ComputerOutput = StateT ComputerState KeyboardIO ()
+type HackComputer = StateT ComputerState KeyboardIO ()
 
-hackComputer :: Reset -> ComputerOutput
+hackComputer :: Reset -> HackComputer
 hackComputer reset = do
     (ramState, screenState, romState, cpuReg, instruction, input) <- get
     
     let ((mAddress, mOutput, mWrite, pcOutput), newCpuState) = runState (cpu input instruction reset) cpuReg
-        (nextInstruction, newRomState) = runState (rom32K pcOutput) romState
+    
+    let (nextInstruction, newRomState) = runState (rom32K pcOutput) romState
         
-        memoryState = (mainMemory mAddress mOutput mWrite `runStateT` ramState) `runStateT` screenState
+        memoryState = mainMemory mAddress mOutput mWrite `runStateT` (ramState, screenState)
 
-    ((nextInput, newRamState), newScreenState) <- liftIO memoryState
+    (nextInput, (newRamState, newScreenState)) <- liftIO memoryState
 
     put (newRamState, newScreenState, newRomState, newCpuState, nextInstruction, nextInput)
 

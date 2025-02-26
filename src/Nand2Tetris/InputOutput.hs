@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Nand2Tetris.InputOutput(
     screen
     , ScreenAddress
@@ -12,8 +13,9 @@ import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Memory
 import Nand2Tetris.Gates
 
-import BasicPrelude (IO, pure, (.))
+import BasicPrelude (IO, pure, (.), Char, (<$>), ($), liftIO)
 import Control.Monad.Trans.State.Strict (State, get, put)
+import System.IO (stdin, hReady, getChar)
 
 type ScreenAddress = (Bit, Bit, Bit, Bit,  Bit, Bit, Bit, Bit,  Bit, Bit, Bit, Bit,  Bit, Bit) -- 13 bit address; first bit is ignored
 type ScreenState = Bus4Way RAM4kState
@@ -42,4 +44,14 @@ type KeyboardOutput = HackWord16
 type KeyboardIO = IO
 
 keyboard :: KeyboardIO KeyboardOutput
-keyboard = (pure . pure) Zero -- no output
+keyboard = do
+    buttonPressed <- liftIO $ hReady stdin
+    if buttonPressed 
+        then getScanCode <$> getChar
+        else (pure . pure) Zero
+
+getScanCode :: Char -> KeyboardOutput
+getScanCode = \case
+    '\ESC' -> HackWord16F (Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, One, Zero, Zero, Zero, One, One, Zero, Zero) -- 140
+    'j' -> HackWord16F (Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, One, One, Zero, One, Zero, One, Zero) -- 106
+    _ -> pure Zero
