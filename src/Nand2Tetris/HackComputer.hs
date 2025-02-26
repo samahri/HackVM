@@ -13,30 +13,27 @@ import Nand2Tetris.Chips
 import Nand2Tetris.Gates
 import Nand2Tetris.Types.Bus
 import Control.Monad.Trans.State.Strict (State, StateT, get, put, execState, runState, runStateT)
-import BasicPrelude (pure, IO, (==))
+import BasicPrelude (pure, (==))
 import Control.Monad.IO.Class (liftIO)
 
-type Input16 = HackWord16
-type Output16 = HackWord16
 
-type Reset = Bit
-type Instruction = HackWord16 -- value read from ROM
+type CPUInstruction = HackWord16 -- value read from ROM
 type MInput = HackWord16 -- value read from RAM (M register or RAM[A])
 
 type MAddress = HackWord16 -- 15-bit address; last bit is ignored
 type MOutput = HackWord16 -- value written to RAM[MAddress]
 type MWrite = Bit
 type PCOutput = HackWord16 -- 15-bit address; last bit is ignored
+type CPUOutput = (MAddress, MOutput, MWrite, PCOutput)
 
 type ARegister = HackWord16
 type DRegister = HackWord16
 type PCRegister = HackWord16
+type CPURegisters = (ARegister, DRegister, PCRegister)
 
-type CpuRegisters = (ARegister, DRegister, PCRegister)
-type CpuOutput = (MAddress, MOutput, MWrite, PCOutput)
-type CpuState = State CpuRegisters CpuOutput 
+type CPU = State CPURegisters CPUOutput 
 
-cpu :: MInput -> Instruction -> Reset -> CpuState
+cpu :: MInput -> CPUInstruction -> Reset -> CPU
 cpu mInput instruction reset = do
     (aReg, dReg, pcOutput) <- get
 
@@ -74,14 +71,12 @@ cpu mInput instruction reset = do
 
 -}
 
-type Load = Bit
-
 type MemoryAddress = HackWord16 -- 15 bit address
-type MemoryState = Bus2Way Ram16kState
+type MemoryState = Bus2Way RAM16kState
 
-type MemoryOutput = StateT MemoryState (StateT Ram16kState KeyboardIO) Output16
+type MainMemory = StateT MemoryState (StateT ScreenState KeyboardIO) Output16
 
-mainMemory :: MemoryAddress -> Input16 -> Load -> MemoryOutput
+mainMemory :: MemoryAddress -> Input16 -> Load -> MainMemory
 mainMemory (HackWord16F (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13, sel14, sel15) )input16 load = do
     memoryState <- get
     
@@ -110,28 +105,27 @@ mainMemory (HackWord16F (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9
         ram16KSelector = sel1
         screenSelector = sel2
 
-type CpuInstruction = HackWord16
-type CpuInput = HackWord16
+type CPUInput = MInput
 
-type ComputerState = (MemoryState, Ram16kState, ROM32kState, CpuRegisters, CpuInstruction, CpuInput)
-type ComputerOutput = StateT ComputerState IO ()
+type ComputerState = (MemoryState, ScreenState, ROM32kState, CPURegisters, CPUInstruction, CPUInput)
+type ComputerOutput = StateT ComputerState KeyboardIO ()
 
 hackComputer :: Reset -> ComputerOutput
 hackComputer reset = do
-    (memoryState, ramState, romState, cpuReg, instruction, input) <- get
+    (ramState, screenState, romState, cpuReg, instruction, input) <- get
     
     let ((mAddress, mOutput, mWrite, pcOutput), newCpuState) = runState (cpu input instruction reset) cpuReg
         (nextInstruction, newRomState) = runState (rom32K pcOutput) romState
         
-        innerRamState = (mainMemory mAddress mOutput mWrite `runStateT` memoryState) `runStateT` ramState
+        memoryState = (mainMemory mAddress mOutput mWrite `runStateT` ramState) `runStateT` screenState
 
-    ((nextInput, newMemoryState), newRamState) <- liftIO innerRamState
+    ((nextInput, newRamState), newScreenState) <- liftIO memoryState
 
-    put (newMemoryState, newRamState, newRomState, newCpuState, nextInstruction, nextInput)
+    put (newRamState, newScreenState, newRomState, newCpuState, nextInstruction, nextInput)
 
     pure ()
     
-getPCCtrl :: Instruction -> Bit -> Bit -> (Bit, Bit)
+getPCCtrl :: CPUInstruction -> Bit -> Bit -> (Bit, Bit)
 getPCCtrl instruction zeroFlag negativeFlag = (result, not result)
     where
         result = and (isCInstruction, jumpLogic)
@@ -144,16 +138,16 @@ getPCCtrl instruction zeroFlag negativeFlag = (result, not result)
                 condPos = and (jPos, and (not negativeFlag, not zeroFlag ))
                 unCond = and (jNeg, and (jPos, jZero ))
 
-getOpcode :: Instruction -> Bit
+getOpcode :: CPUInstruction -> Bit
 getOpcode (HackWord16F (x, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _)) = x
 
-getCompBits :: Instruction -> (Bit, AluCtrl)
+getCompBits :: CPUInstruction -> (Bit, AluCtrl)
 getCompBits (HackWord16F (_, _, _, a, c1, c2, c3, c4, c5, c6, _, _, _, _, _, _)) = (a, AluCtrl {zx = c1, nx = c2, zy = c3, ny = c4, f = c5, no = c6})
 
-getDestBit :: Instruction -> (Bit, Bit, Bit)
+getDestBit :: CPUInstruction -> (Bit, Bit, Bit)
 getDestBit (HackWord16F (_, _, _, _, _, _, _, _, _, _, d1, d2, d3, _, _, _)) = (d1, d2, d3)
 
-getJumpBits :: Instruction -> (Bit, Bit, Bit)
+getJumpBits :: CPUInstruction -> (Bit, Bit, Bit)
 getJumpBits (HackWord16F (_, _, _, _, _, _, _, _, _, _, _, _, _, j1, j2, j3)) = (j1, j2, j3)
 
 

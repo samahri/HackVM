@@ -15,16 +15,12 @@ import Nand2Tetris.Gates
 import BasicPrelude (IO, pure, (.))
 import Control.Monad.Trans.State.Strict (State, get, put)
 
-type Input16 = HackWord16
-type Output16 = HackWord16
-
-type Load = Bit
-
 type ScreenAddress = (Bit, Bit, Bit, Bit,  Bit, Bit, Bit, Bit,  Bit, Bit, Bit, Bit,  Bit, Bit) -- 13 bit address; first bit is ignored
-type ScreenState = Bus4Way Ram4kState
-type ScreenOutput = State ScreenState Output16
+type ScreenState = Bus4Way RAM4kState
+type ScreenOutput = Output16
+type Screen = State ScreenState ScreenOutput
 
-screen :: ScreenAddress -> Input16 -> Load -> ScreenOutput
+screen :: ScreenAddress -> Input16 -> Load -> Screen
 screen (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13) input16 load = do
     screenState <- get
     let inputBus = dMux4Way16 input16 ram4KSelector

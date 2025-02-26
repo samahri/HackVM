@@ -1,9 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Nand2Tetris.Memory (
     DFF
-   ,DFF16
-   ,Ram4kState
-   ,Ram16kState
+   ,Register
+   ,RAM4kState
+   ,RAM16kState
    ,ROM32kState
    ,dff
    ,bit
@@ -19,7 +19,7 @@ module Nand2Tetris.Memory (
    , operateMemoryMachine
 ) where
 
-import Nand2Tetris.Types.Bit(Bit(..))
+import Nand2Tetris.Types.Bit
 import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Types.Bus
 import Nand2Tetris.Gates (mux, dMux8Way, dMux8Way16, mux8Way16, dMux4Way, dMux4Way16, muxRam, mux8WayRam, mux4WayRam, dmux, dmux16)
@@ -28,19 +28,16 @@ import BasicPrelude ((<$>), fst, snd, ($))
 import Control.Applicative (Applicative, pure, (<*), liftA2)
 import Control.Monad.Trans.State.Strict (State, get, put, runState)
 
-type Input = Bit
-type Output = Bit
-type Input16 = HackWord16
-type Output16 = HackWord16
+type MemoryOutput = Output16
 
 {- 
     data flip flop
     > out(t) = in (t - 1)
 -}
+type DffStateBit = Bit
+type DFF = State DffStateBit OutputBit
 
-type DFF = State Bit Output
-
-dff :: Input -> DFF
+dff :: InputBit -> DFF
 dff input = get <* put input
 
 {-
@@ -50,9 +47,7 @@ dff input = get <* put input
         if load == 1 -> out(t) = in (t - 1)
         if load == 0 -> out(t) = out(t-1)
 -} 
-type Load = Bit
-
-bit :: Input -> Load -> DFF
+bit :: InputBit -> Load -> DFF
 bit input load = do
     prevOutput <- get
     let dffInput = mux (prevOutput, input) load
@@ -63,11 +58,10 @@ bit input load = do
     constructed using 8 single bit registers
 -}
 
-type MemoryState = HackWord16
+type RegisterState = HackWord16
+type Register = State RegisterState MemoryOutput 
 
-type DFF16 = State MemoryState Output16 
-
-register :: Input16 -> Load -> DFF16
+register :: Input16 -> Load -> Register
 register input16 load = do
     registerState <- get
     let (registerOutput, nextCycleOutput) = operateMemoryMachine bit input16 (pure load) registerState 
@@ -79,11 +73,11 @@ register input16 load = do
     constructed using 8 registers
 -}
 
-type RAM8Address = (Bit, Bit, Bit)
-type Ram8State = Bus8Way MemoryState
-type RAM8Output = State Ram8State Output16
+type RAM8Address = (Bit, Bit, Bit) -- todo: find a type for addresses
+type RAM8State = Bus8Way RegisterState
+type RAM8 = State RAM8State MemoryOutput
 
-ram8 :: RAM8Address -> Input16 -> Load  -> RAM8Output
+ram8 :: RAM8Address -> Input16 -> Load  -> RAM8
 ram8 addr input16 load = do
     ram8State <- get
 
@@ -102,10 +96,10 @@ ram8 addr input16 load = do
 -}
 
 type RAM64Address = (Bit, Bit, Bit, Bit, Bit, Bit)
-type Ram64State = Bus8Way Ram8State
-type RAM64Output = State Ram64State Output16
+type RAM64State = Bus8Way RAM8State
+type RAM64 = State RAM64State MemoryOutput
 
-ram64 :: RAM64Address -> Input16 -> Load -> RAM64Output
+ram64 :: RAM64Address -> Input16 -> Load -> RAM64
 ram64 (sel0, sel1, sel2, sel3, sel4, sel5) input16 load = do
     ram64State <- get
     let inputBus = dMux8Way16 input16 ram8Selector
@@ -127,10 +121,10 @@ ram64 (sel0, sel1, sel2, sel3, sel4, sel5) input16 load = do
     constructed using 8 RAM64
 -}
 type RAM512Address = (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit)
-type Ram512State = Bus8Way Ram64State
-type RAM512Output = State Ram512State Output16
+type RAM512State = Bus8Way RAM64State
+type RAM512 = State RAM512State MemoryOutput
 
-ram512 :: RAM512Address -> Input16 -> Load -> RAM512Output
+ram512 :: RAM512Address -> Input16 -> Load -> RAM512
 ram512 (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8) input16 load = do
     ram512State <- get
     let inputBus = dMux8Way16 input16 ram64Selector
@@ -153,10 +147,10 @@ ram512 (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8) input16 load = do
     constructed using 8 RAM512
 -}
 type RAM4KAddress = (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit)
-type Ram4kState = Bus8Way Ram512State
-type RAM4kOutput = State Ram4kState Output16
+type RAM4kState = Bus8Way RAM512State
+type RAM4k = State RAM4kState MemoryOutput
 
-ram4K :: RAM4KAddress -> Input16 -> Load -> RAM4kOutput
+ram4K :: RAM4KAddress -> Input16 -> Load -> RAM4k
 ram4K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11) input16 load = do
     ram4KState <- get
     let 
@@ -179,10 +173,10 @@ ram4K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11)
     constructed using 4 RAM4ks
 -}
 type RAM16KAddress = (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit)
-type Ram16kState = Bus4Way Ram4kState
-type RAM16kOutput = State Ram16kState Output16
+type RAM16kState = Bus4Way RAM4kState
+type RAM16k = State RAM16kState MemoryOutput
 
-ram16K :: RAM16KAddress -> Input16 -> Load -> RAM16kOutput
+ram16K :: RAM16KAddress -> Input16 -> Load -> RAM16k
 ram16K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13) input16 load = do
     ram16KState <- get
     let inputBus = dMux4Way16 input16 ram4KSelector
@@ -209,10 +203,9 @@ ram16K (sel0, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11
     otherwise out(t) = out (t-1)
 -} 
 type Inc = Bit
-type Reset = Inc
 type CounterCtrl = (Load, Inc, Reset)
 
-pc :: Input16 -> CounterCtrl -> DFF16
+pc :: Input16 -> CounterCtrl -> Register
 pc input16 ctrl = do
     -- todo: figure out the priority of this
     -- TODO: use logic components
@@ -231,10 +224,10 @@ pc input16 ctrl = do
     Constructed from two 16KB RAM
 -}
 type ROMAddress = HackWord16 -- 15-bit address
-type ROM32kState = Bus2Way Ram16kState
-type ROM32kOutput = State ROM32kState Output16
+type ROM32kState = Bus2Way RAM16kState
+type ROM32k = State ROM32kState MemoryOutput
 
-rom32K :: ROMAddress -> ROM32kOutput
+rom32K :: ROMAddress -> ROM32k
 rom32K (HackWord16F (_, addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8, addr9, addr10, addr11, addr12, addr13, addr14)) = do
     rom32KState <- get
     let ram16KOutput = muxRam rom32KState addr14
@@ -253,7 +246,7 @@ rom32K (HackWord16F (_, addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, 
         registerSelector = (addr0, addr1, addr2)
 
 -- utility function to load the ROM
-loadROM32K :: ROMAddress -> Input16 -> ROM32kOutput
+loadROM32K :: ROMAddress -> Input16 -> ROM32k
 loadROM32K (HackWord16F (addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8, addr9, addr10, addr11, addr12, addr13, addr14, _)) input16 = do
     rom32KState <- get
 

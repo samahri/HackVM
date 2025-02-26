@@ -1,5 +1,12 @@
 module Nand2Tetris.Types.Bit(
     Bit(..)
+   ,InputBit
+   ,OutputBit
+   ,Carry
+   ,Sum
+   ,Sel
+   ,Load
+   ,Reset
 ) where
 
 import CorePrelude(Show, String, Eq, Enum, Bounded, fromEnum, toEnum, minBound, maxBound)
@@ -7,6 +14,15 @@ import System.Random (Random, randomR, random)
 import BasicPrelude(show)
 
 data Bit = Zero | One deriving (Eq, Enum, Bounded)
+
+type InputBit = Bit
+type OutputBit = Bit
+type Carry = OutputBit
+type Sum = OutputBit
+
+type Reset = Bit
+type Sel = Bit
+type Load = Bit
 
 instance Show Bit where
     show :: Bit -> String

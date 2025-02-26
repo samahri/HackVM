@@ -493,7 +493,7 @@ spec = do
 
         {--
             forall (computer :: Reset -> HackComputer,
-                    mainMemory :: MemoryAddress -> MemoryOutput
+                    mainMemory :: MemoryAddress -> MainMemory
                     addressM :: MemoryAddress,
                     x :: HackWord16 ).
                 mainMemory addressM = x -> cpuInput (execState (computer 0)) == x

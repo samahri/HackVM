@@ -5,6 +5,8 @@ module Nand2Tetris.Types.HackWord16 (
    , toList
    , HackWord16
    , HackWord16F(..)
+   , Input16
+   , Output16 
 ) where
 
 import Nand2Tetris.Types.Bit(Bit)
@@ -16,6 +18,9 @@ import Control.Exception (assert)
 newtype HackWord16F a = HackWord16F (a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a) deriving (Functor)
 
 type HackWord16 = HackWord16F Bit
+
+type Input16 = HackWord16
+type Output16 = HackWord16
 
 -- use isos
 toHackWord16 :: [Bit] -> HackWord16

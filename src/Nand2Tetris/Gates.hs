@@ -24,7 +24,7 @@ module Nand2Tetris.Gates(
   , mux4WayRam
 ) where
 
-import Nand2Tetris.Types.Bit(Bit(One, Zero))
+import Nand2Tetris.Types.Bit(Bit(One, Zero), InputBit, OutputBit, Sel)
 import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Types.Bus
 import Nand2Tetris.Utils
@@ -32,41 +32,34 @@ import BasicPrelude ((.), (==), foldr1, (<$>))
 import Control.Applicative (pure, liftA2)
 import Data.Tuple (curry)
 
-type Input16 = HackWord16
-type Output16 = HackWord16
-
-type Input = Bit
-type Output = Bit
-type Sel = Bit
-
-nand :: (Input, Input) -> Output
+nand :: (InputBit, InputBit) -> OutputBit
 nand (One, One) = Zero
 nand _ = One
 
-not :: Input -> Output
+not :: InputBit -> OutputBit
 not a = nand (a, a)
 
-and :: (Input, Input) -> Output
+and :: (InputBit, InputBit) -> OutputBit
 and = not . nand
 
-or :: (Input, Input) -> Output
+or :: (InputBit, InputBit) -> OutputBit
 or (a, b) = nand (not a, not b)
 
-nor :: (Input, Input) -> Output
+nor :: (InputBit, InputBit) -> OutputBit
 nor = not . or
 
-xor :: (Input, Input) -> Output
+xor :: (InputBit, InputBit) -> OutputBit
 xor (a, b) = nand (nand (a, r1), nand (r1, b))
     where
         r1 = nand (a, b)
 
-mux :: (Input, Input) -> Sel -> Output
+mux :: (InputBit, InputBit) -> Sel -> OutputBit
 mux (a , b) sel = or (o1, o2)
     where
         o1 = and (a, not sel)
         o2 = and (b, sel)
 
-dmux :: Input -> Sel -> Bus2Way Output
+dmux :: InputBit -> Sel -> Bus2Way OutputBit
 dmux input sel = Bus2Way (o1, o2)
     where
         o1 = and (input, not sel)
@@ -92,7 +85,7 @@ mux16 (input1, input2) sel = case sel of
     Zero -> input1
     One -> input2
 
-or8Way :: Bus4Way Input -> Input
+or8Way :: Bus4Way InputBit -> InputBit
 or8Way input = let inputArr = bus4ToList input in foldr1 (curry or) inputArr
     where
         -- TODO: implement foldable
@@ -108,14 +101,14 @@ mux4Way16 (Bus4Way (a, b, c, d)) sel = case sel of
     (One, One) -> d
 
 -- TODO use logic gates
-dMux4Way :: Input -> (Sel, Sel) -> Bus4Way Output
+dMux4Way :: InputBit -> (Sel, Sel) -> Bus4Way OutputBit
 dMux4Way input sel = case sel of
     (Zero, Zero) -> Bus4Way (input, Zero, Zero, Zero)
     (Zero, One) -> Bus4Way (Zero, input, Zero, Zero)
     (One, Zero) -> Bus4Way (Zero, Zero, input, Zero)
     (One, One) -> Bus4Way (Zero, Zero, Zero, input)
 
-dMux8Way :: Input -> (Sel, Sel, Sel) -> Bus8Way Output
+dMux8Way :: InputBit -> (Sel, Sel, Sel) -> Bus8Way OutputBit
 dMux8Way input (sel0, sel1, sel2) = combine4Way upper lower
     where
         lower = if sel0 == Zero then pure Zero else dMux4Way input (sel1, sel2) 
