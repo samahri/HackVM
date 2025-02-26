@@ -1,5 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-}
 module Nand2Tetris.HackComputer (
     HackComputer
     , ComputerState
@@ -80,7 +79,7 @@ type MemoryState = Bus2Way RAM16kState
 type MainMemory = StateT (MemoryState, ScreenState) KeyboardIO Output16
 
 mainMemory :: MemoryAddress -> Input16 -> Load -> MainMemory
-mainMemory (HackWord16F (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13, sel14, sel15) )input16 load = do
+mainMemory (HackWord16F (_, addr14, addr13, addr12, addr11, addr10, addr9, addr8, addr7, addr6, addr5, addr4, addr3, addr2, addr1, addr0))input16 load = do
     (memoryState, screenState) <- get
     
     let inputBus = dmux16 input16 ram16KSelector
@@ -98,16 +97,15 @@ mainMemory (HackWord16F (_, sel1, sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9
                 pure (muxRam output ram16KSelector, (newState, screenState))
             else do
                 kb <- liftIO keyboard
-                print kb
                 pure (kb, (memoryState, screenState))
 
     put nextCycleOutput
     pure registerOutput
     where
-        ram16KMemoryBus = (sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13, sel14, sel15)
-        screenBus = (sel2, sel3, sel4, sel5, sel6, sel7, sel8, sel9, sel10, sel11, sel12, sel13, sel14, sel15) 
-        ram16KSelector = sel1
-        screenSelector = sel2
+        ram16KMemoryBus = (addr13, addr12, addr11, addr10, addr9, addr8, addr7, addr6, addr5, addr4, addr3, addr2, addr1, addr0)
+        screenBus = (addr13, addr12, addr11, addr10, addr9, addr8, addr7, addr6, addr5, addr4, addr3, addr2, addr1, addr0) 
+        ram16KSelector = addr14
+        screenSelector = addr13
 
 type CPUInput = MInput
 
