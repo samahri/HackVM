@@ -62,6 +62,7 @@ instance Eq HackWord16 where
         (x14 == y14) &&
         (x15 == y15)
 
+-- todo: remove instance of Binary and Bytestring from codebase
 instance Binary a => Binary (HackWord16F a) where
   put :: HackWord16F a -> Put
   put = putList . toList

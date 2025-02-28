@@ -1,10 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Main (main) where
+module CLI.HackComputer (
+    main
+) where
 
 import BasicPrelude hiding (putStrLn)
 import Control.Concurrent (threadDelay)
 import Control.Monad.Trans.State.Strict (evalStateT, execState, execStateT)
-import System.IO (hSetBuffering, hSetEcho, stdin, hReady, BufferMode( NoBuffering ))
+import System.IO (hSetBuffering, hSetEcho, stdin, hReady, BufferMode( NoBuffering ), withFile, IOMode(ReadMode), putStrLn)
+import Data.ByteString as BS hiding (foldl)
+import System.Exit(exitFailure)
 
 import Nand2Tetris.Utils
 import Nand2Tetris.HackComputer
@@ -13,19 +17,32 @@ import Nand2Tetris.Chips
 import Nand2Tetris.Types.Bit
 import Nand2Tetris.Types.Bus
 import Nand2Tetris.Types.HackWord16
+import Nand2Tetris.Assembler
+import CLI.Assembler hiding (main)
 
 main :: IO ()
 main = do
-    hSetBuffering stdin NoBuffering
-    hSetEcho stdin False
+    setupComputer
+
+    (_, hackFileEither) <- getFileNames
+
+    hackFile <- case hackFileEither of
+        Right hackFile -> pure hackFile
+        Left _ -> putStrLn "no file exists" >> exitFailure
+
+    hackCode <- bytecodeToHackAssem <$> readBinaryContent hackFile
     
-    initialComputerState <- loadMemory
+    initialComputerState <- loadMemory hackCode
     
     (memoryState, screenState, _, _, _, _) <- execStateT (hackComputer Zero >> runComputer hackComputer) initialComputerState
+    
     -- for now, output is only reading from memory location memoryAddressToRead
     let memoryAddressToRead = pure Zero
     memOutput <- evalStateT (mainMemory memoryAddressToRead (pure Zero) Zero) (memoryState, screenState)
     print memOutput
+
+setupComputer :: IO ()
+setupComputer = hSetBuffering stdin NoBuffering >> hSetEcho stdin False
 
 runComputer :: (Reset -> HackComputer) -> HackComputer
 runComputer computer = do
@@ -40,9 +57,12 @@ runComputer computer = do
                 else runComputer computer
         else runComputer computer
 
+readBinaryContent :: FilePath -> IO ByteString
+readBinaryContent hackFile = withFile hackFile ReadMode BS.hGetContents
+
 -- type ComputerState = (MemoryState, ScreenState, ROM32kState, CPURegisters, CPUInstruction, CPUInput)
-loadMemory :: IO ComputerState
-loadMemory = do
+loadMemory :: [HackWord16] -> IO ComputerState
+loadMemory program = do
     let initialCpuInstruction = pure Zero
         cpuInput = pure Zero
         initialDRegister = pure Zero
@@ -51,33 +71,25 @@ loadMemory = do
 
     memoryState <- random32KMemory
     screenState <- randomRam16K
-    rom32kState <- addProgram undefined-- TODO: read from ROM
+    rom32kState <- addProgram program
 
     pure (memoryState, screenState, rom32kState, (initialARegister, initialDRegister, initialPc), initialCpuInstruction, cpuInput)
 
 -- TODO: addProgram reads file and loads it onto memory
-addProgram :: String -> IO ROM32kState
-addProgram _ = do
+addProgram :: [HackWord16] -> IO ROM32kState
+addProgram program = do
     initialRom <- random32KMemory
-    let mem0 = pure Zero
-        newState0 = 
-            execState (loadROM32K mem0 (HackWord16F (Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, One, Zero))) initialRom
-        mem1 = inc16 mem0
-        newState1 = 
-            execState (loadROM32K mem1 (HackWord16F (One, One, One, Zero, One, One, Zero, Zero, Zero, Zero, Zero, One, Zero, Zero, Zero, Zero))) newState0
-        mem2 = inc16 mem1
-        newState2 = 
-            execState (loadROM32K mem2 (HackWord16F (Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, One, One))) newState1
-        mem3 = inc16 mem2
-        newState3 = 
-            execState (loadROM32K mem3 (HackWord16F (One, One, One, Zero, Zero, Zero, Zero, Zero, One, Zero, Zero, One, Zero, Zero, Zero, Zero))) newState2
-        mem4 = inc16 mem3
-        newState4 = 
-            execState (loadROM32K mem4 (HackWord16F (Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero, Zero))) newState3
-        mem5 = inc16 mem4
-        newState5 = 
-            execState (loadROM32K mem5 (HackWord16F (One, One, One, Zero, Zero, Zero, One, One, Zero, Zero, Zero, Zero, One, Zero, Zero, Zero))) newState4
-    pure newState5
+    let updatedRom = addProgramFoldl initialRom program
+    pure updatedRom
+
+type MemoryAddress = HackWord16
+type ProgramData = HackWord16
+
+addProgramFoldl :: ROM32kState -> [HackWord16] -> ROM32kState
+addProgramFoldl initialRom progData = snd $ foldl foo (pure Zero, initialRom) progData
+    where
+        foo :: (MemoryAddress, ROM32kState) -> ProgramData -> (MemoryAddress, ROM32kState)
+        foo (addr, romState) progData' = (inc16 addr, execState (loadROM32K addr progData') romState)
         
 
 --TODO: delete them all

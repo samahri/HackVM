@@ -35,6 +35,8 @@ library
     Nand2Tetris.Types.HackWord16
     Nand2Tetris.Utils
     Nand2Tetris.Assembler
+    CLI.Assembler
+    CLI.HackComputer
   other-modules:
       Paths_nand2Tetris
   autogen-modules:
@@ -50,16 +52,18 @@ library
     , random
     , binary
     , bytestring
+    , directory
+    , optparse-applicative
   default-language: Haskell2010
 
 executable nand2Tetris-exe
-  main-is: Main.hs
+  main-is: HackComputer.hs
   other-modules:
       Paths_nand2Tetris
   autogen-modules:
       Paths_nand2Tetris
   hs-source-dirs:
-      app/hackComputer
+      app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -fno-ignore-asserts
   default-extensions: NoImplicitPrelude, InstanceSigs
 
@@ -67,18 +71,16 @@ executable nand2Tetris-exe
       base >=4.7 && <5
     , nand2Tetris
     , basic-prelude
-    , transformers
-    , random
   default-language: Haskell2010
 
 executable hack-assem
-  main-is: Main.hs
+  main-is: Assembler.hs
   other-modules:
       Paths_nand2Tetris
   autogen-modules:
       Paths_nand2Tetris
   hs-source-dirs:
-      app/assembler
+      app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -fno-ignore-asserts
   default-extensions: NoImplicitPrelude, InstanceSigs
 
@@ -86,9 +88,7 @@ executable hack-assem
       base >=4.7 && <5
     , nand2Tetris
     , basic-prelude
-    , directory
-    , optparse-applicative
-    , bytestring
+    
   default-language: Haskell2010
 
 test-suite nand2Tetris-test
