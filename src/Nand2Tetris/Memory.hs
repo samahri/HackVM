@@ -7,6 +7,7 @@ module Nand2Tetris.Memory (
    ,ROM32kState
    ,dff
    ,bit
+--    , register'
    ,register
    ,ram8
    ,ram64
@@ -61,12 +62,24 @@ bit input load = do
 type RegisterState = HackWord16
 type Register = State RegisterState MemoryOutput 
 
+-- type RegisterState' = HackWord16F DFF
+-- type Register' = State RegisterState' MemoryOutput 
+
 register :: Input16 -> Load -> Register
 register input16 load = do
     registerState <- get
     let (registerOutput, nextCycleOutput) = operateMemoryMachine bit input16 (pure load) registerState 
     put nextCycleOutput
     pure registerOutput
+
+-- TODO: look into if memory needs to be a Monad to be sequenced using (>>) or simply a state transition function using runState
+-- register' :: Input16 -> Load -> Register'
+-- register' input16 load = do
+--     registerState <- get
+--     let nextCycleOutput = liftA2 (>>) registerState (fmap (`bit` load) input16)
+--         registerOutput = fmap (`evalState` Zero) nextCycleOutput 
+--     put nextCycleOutput
+--     pure registerOutput
 
 {-
     RAM8 - 8 x 16 bit RAM
