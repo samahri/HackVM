@@ -5,7 +5,7 @@ import Nand2Tetris.Types.Bit
 import Nand2Tetris.Types.Bus
 import Nand2Tetris.Chips
 import Nand2Tetris.Utils
-import BasicPrelude (IO, Int, replicateM, (<$>), (+), (^), (==), mod, foldr, fst, ($), (<>), pure, replicate, (!!), (-), length)
+import BasicPrelude
 import System.Random (randomIO, randomRIO)
 
 randomBit :: IO Bit
@@ -60,13 +60,6 @@ type ROM32kState = Bus2Way Ram16KState
 random32KMemory :: IO ROM32kState
 random32KMemory = toBus2 <$> replicateM 2 randomRam16K 
 
-
--- TODO: make HackWord16 Foldable
-convertToInt :: HackWord16 -> Int
-convertToInt input = fst (foldr func (0, 0) (toList input)) `mod` 256
-    where
-        func :: Bit -> (Int, Int) -> (Int, Int)
-        func b (total, acc) = if b == Zero then (total, acc + 1) else (total + 2^acc, acc + 1)
 
 getRandomAluCtrl :: IO (Bit, AluCtrl)
 getRandomAluCtrl = do

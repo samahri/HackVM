@@ -8,6 +8,7 @@ import Nand2Tetris.TestUtil
 import Control.Monad.Trans.State.Strict (evalState)
 import BasicPrelude (($), (>>), IO, pure, (==), mod, (+))
 import Nand2Tetris.Memory
+import Nand2Tetris.Types.HackWord16
 import Test.Hspec
 import Control.Monad (replicateM_)
 

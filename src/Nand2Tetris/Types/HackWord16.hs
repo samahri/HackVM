@@ -1,37 +1,30 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Nand2Tetris.Types.HackWord16 (
-    toHackWord16 
-   , toList
-   , HackWord16
+     HackWord16
    , HackWord16F(..)
    , Input16
-   , Output16 
+   , Output16
+   , toList
+   , toHackWord16
+   , convertToInt
 ) where
 
-import Nand2Tetris.Types.Bit(Bit)
-import Data.List (length)
-import BasicPrelude ((==), ($), Eq, (&&), Show, show, (++), error, Functor)
-import Control.Applicative (Applicative, pure, (<*>))
+import Nand2Tetris.Types.Bit(Bit(..))
+import Data.Binary
+
+import BasicPrelude
+import GHC.Generics(Generic)
 import Control.Exception (assert)
 
-newtype HackWord16F a = HackWord16F (a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a) deriving (Functor)
+newtype HackWord16F a = HackWord16F (a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a) 
+  deriving (Generic, Functor)
 
 type HackWord16 = HackWord16F Bit
 
 type Input16 = HackWord16
 type Output16 = HackWord16
-
--- use isos
-toHackWord16 :: [Bit] -> HackWord16
-toHackWord16 list = assert (length list == 16) $ converttoHackWord16 list
-    where
-        converttoHackWord16 :: [Bit] -> HackWord16
-        converttoHackWord16 [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15] = HackWord16F (x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15)
-        converttoHackWord16 _ = error "undefined"
-
-toList :: HackWord16 -> [Bit]
-toList (HackWord16F (x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15)) = [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15]
 
 instance Applicative HackWord16F where
   pure :: a -> HackWord16F a
@@ -68,3 +61,31 @@ instance Eq HackWord16 where
         (x13 == y13) &&
         (x14 == y14) &&
         (x15 == y15)
+
+instance Binary a => Binary (HackWord16F a) where
+  put :: HackWord16F a -> Put
+  put = putList . toList
+
+  get :: Get (HackWord16F a)
+  get = toHackWord16 <$> get
+
+-- use isos
+toHackWord16 :: [a] -> HackWord16F a
+toHackWord16 list = assert (length list == 16) $ converttoHackWord16 list
+    where
+        converttoHackWord16 :: [a] -> HackWord16F a
+        converttoHackWord16 [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15] = HackWord16F (x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15)
+        converttoHackWord16 _ = error "undefined"
+
+toList :: HackWord16F a -> [a]
+toList (HackWord16F (x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15)) = [x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15]
+
+-- TODO: make HackWord16 Foldable
+convertToInt :: HackWord16 -> Int
+convertToInt input = foldBitList (toList input) `mod` 256
+
+foldBitList :: [Bit] -> Int
+foldBitList bitlist = fst (foldr func (0, 0) bitlist)
+    where
+        func :: Bit -> (Int, Int) -> (Int, Int)
+        func b (total, acc) = if b == Zero then (total, acc + 1) else (total + 2^acc, acc + 1)

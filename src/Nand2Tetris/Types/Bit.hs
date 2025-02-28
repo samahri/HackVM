@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Nand2Tetris.Types.Bit(
     Bit(..)
    ,InputBit
@@ -9,11 +10,14 @@ module Nand2Tetris.Types.Bit(
    ,Reset
 ) where
 
-import CorePrelude(Show, String, Eq, Enum, Bounded, fromEnum, toEnum, minBound, maxBound)
+import CorePrelude
 import System.Random (Random, randomR, random)
 import BasicPrelude(show)
+import Data.Binary
+import GHC.Generics(Generic)
 
-data Bit = Zero | One deriving (Eq, Enum, Bounded)
+-- TODO learn about Generic typeclass
+data Bit = Zero | One deriving (Eq, Enum, Bounded, Generic)
 
 type InputBit = Bit
 type OutputBit = Bit
@@ -38,3 +42,19 @@ instance Random Bit where
     random gen = 
         let (n, gen') = randomR (fromEnum (minBound :: Bit), fromEnum (maxBound :: Bit)) gen
         in (toEnum n, gen')
+
+instance Binary Bit where
+    put :: Bit -> Put
+    -- (Bool -> Put) . (Bit -> Bool)
+    put = put . bitToBool
+
+    get :: Get Bit
+    get = boolToBit <$> get
+
+bitToBool :: Bit -> Bool
+bitToBool Zero = False
+bitToBool One = True
+
+boolToBit :: Bool -> Bit
+boolToBit False = Zero
+boolToBit True = One

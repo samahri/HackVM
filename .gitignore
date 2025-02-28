@@ -6,3 +6,5 @@
 *.pdf
 playground.hs
 *.txt
+*.asm
+*.hack
