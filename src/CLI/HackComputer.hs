@@ -7,7 +7,6 @@ import BasicPrelude hiding (putStrLn)
 import Control.Concurrent (threadDelay)
 import Control.Monad.Trans.State.Strict (evalStateT, execState, execStateT)
 import System.IO (hSetBuffering, hSetEcho, stdin, hReady, BufferMode( NoBuffering ), withFile, IOMode(ReadMode), putStrLn)
-import Data.ByteString as BS hiding (foldl)
 import System.Exit(exitFailure)
 
 import Nand2Tetris.Utils
@@ -15,10 +14,10 @@ import Nand2Tetris.HackComputer
 import Nand2Tetris.Memory
 import Nand2Tetris.Chips
 import Nand2Tetris.Types.Bit
-import Nand2Tetris.Types.Bus
+import Nand2Tetris.Types.Memory
 import Nand2Tetris.Types.HackWord16
 import Nand2Tetris.Assembler
-import CLI.Assembler hiding (main)
+import CLI.Utils
 
 main :: IO ()
 main = do
@@ -46,7 +45,7 @@ setupComputer = hSetBuffering stdin NoBuffering >> hSetEcho stdin False
 
 runComputer :: (Reset -> HackComputer) -> HackComputer
 runComputer computer = do
-    liftIO $ threadDelay 10
+    liftIO $ threadDelay 1000
     computer Zero
     exit <- liftIO $ hReady stdin  -- Check if a key has been pressed
     if exit
@@ -57,20 +56,20 @@ runComputer computer = do
                 else runComputer computer
         else runComputer computer
 
-readBinaryContent :: FilePath -> IO ByteString
-readBinaryContent hackFile = withFile hackFile ReadMode BS.hGetContents
+-- TODO: duplicate function from CLI.Assembler
+readBinaryContent :: FilePath -> IO String
+readBinaryContent hackFile = withFile hackFile ReadMode (readContent "" (<>))
 
--- type ComputerState = (MemoryState, ScreenState, ROM32kState, CPURegisters, CPUInstruction, CPUInput)
 loadMemory :: [HackWord16] -> IO ComputerState
 loadMemory program = do
-    let initialCpuInstruction = pure Zero
-        cpuInput = pure Zero
-        initialDRegister = pure Zero
-        initialARegister = pure Zero
-        initialPc = pure Zero
+    initialCpuInstruction <- zero16Bits
+    cpuInput <- zero16Bits
+    initialDRegister <- zero16Bits
+    initialARegister <- zero16Bits
+    initialPc <- zero16Bits
 
-    memoryState <- random32KMemory
-    screenState <- randomRam16K
+    memoryState <- zero32KMemory
+    screenState <- zeroRam16K
     rom32kState <- addProgram program
 
     pure (memoryState, screenState, rom32kState, (initialARegister, initialDRegister, initialPc), initialCpuInstruction, cpuInput)
@@ -78,7 +77,7 @@ loadMemory program = do
 -- TODO: addProgram reads file and loads it onto memory
 addProgram :: [HackWord16] -> IO ROM32kState
 addProgram program = do
-    initialRom <- random32KMemory
+    initialRom <- zero32KMemory
     let updatedRom = addProgramFoldl initialRom program
     pure updatedRom
 
@@ -86,60 +85,32 @@ type MemoryAddress = HackWord16
 type ProgramData = HackWord16
 
 addProgramFoldl :: ROM32kState -> [HackWord16] -> ROM32kState
-addProgramFoldl initialRom progData = snd $ foldl foo (pure Zero, initialRom) progData
+addProgramFoldl initialRom progData = snd $ foldl foldFunc (pure Zero, initialRom) progData
     where
-        foo :: (MemoryAddress, ROM32kState) -> ProgramData -> (MemoryAddress, ROM32kState)
-        foo (addr, romState) progData' = (inc16 addr, execState (loadROM32K addr progData') romState)
+        foldFunc :: (MemoryAddress, ROM32kState) -> ProgramData -> (MemoryAddress, ROM32kState)
+        foldFunc (addr, romState) progData' = (inc16 addr, execState (loadROM32K addr progData') romState)
         
 
---TODO: delete them all
-randomBit :: IO Bit
-randomBit = pure Zero
+zeroBit :: IO Bit
+zeroBit = pure Zero
 
--- random16Bits :: IO HackWord16
--- random16Bits = toHackWord16 <$> replicateM 16 randomBit
+zero16Bits :: IO HackWord16
+zero16Bits = toHackWord16 <$> replicateM 16 zeroBit
 
-type Ram8State = Bus8Way HackWord16
-randomRam8 :: IO Ram8State
-randomRam8 = toBus8 <$> replicateM 8 randomInstruction
+zeroRam8 :: IO RAM8State
+zeroRam8 = toBus8 <$> replicateM 8 zero16Bits
 
-type Ram64State = Bus8Way Ram8State
-randomRam64 :: IO Ram64State
-randomRam64 = toBus8 <$> replicateM 8 randomRam8
+zeroRam64 :: IO RAM64State
+zeroRam64 = toBus8 <$> replicateM 8 zeroRam8
 
-type Ram512State = Bus8Way Ram64State
-randomRam512 :: IO Ram512State
-randomRam512 = toBus8 <$> replicateM 8 randomRam64
+zeroRam512 :: IO RAM512State
+zeroRam512 = toBus8 <$> replicateM 8 zeroRam64
 
-type Ram4KState = Bus8Way Ram512State
-randomRam4K :: IO Ram4KState
-randomRam4K = toBus8 <$> replicateM 8 randomRam512
+zeroRam4K :: IO RAM4kState
+zeroRam4K = toBus8 <$> replicateM 8 zeroRam512
 
--- randomRam8K :: IO (Bus2Way Ram4KState)
--- randomRam8K = toBus2 <$> replicateM 2 randomRam4K
+zeroRam16K :: IO RAM16kState
+zeroRam16K = toBus4 <$> replicateM 4 zeroRam4K
 
-type Ram16KState = Bus4Way Ram4KState
-randomRam16K :: IO Ram16KState
-randomRam16K = toBus4 <$> replicateM 4 randomRam4K
-
--- type ROM32kState = Bus2Way Ram16KState
-random32KMemory :: IO ROM32kState
-random32KMemory = toBus2 <$> replicateM 2 randomRam16K 
-
-randomInstruction :: IO HackWord16
-randomInstruction = do
-                arand <- randomBit
-                c0 <- randomBit
-                c1 <- randomBit
-                c2 <- randomBit
-                c3 <- randomBit
-                c4 <- randomBit
-                c5 <- randomBit
-                d0 <- randomBit
-                d1 <- randomBit
-                d2 <- randomBit
-                -- j0 <- randomBit
-                -- j1 <- randomBit
-                -- j2 <- randomBit
-
-                pure $ HackWord16F (One, One, One, arand, c0, c1, c2, c3, c4, c5, d0, d1, d2, Zero, Zero, Zero)
+zero32KMemory :: IO ROM32kState
+zero32KMemory = toBus2 <$> replicateM 2 zeroRam16K 

@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveGeneric #-}
 module Nand2Tetris.Types.HackWord16 (
      HackWord16
    , HackWord16F(..)
@@ -12,14 +11,12 @@ module Nand2Tetris.Types.HackWord16 (
 ) where
 
 import Nand2Tetris.Types.Bit(Bit(..))
-import Data.Binary
 
 import BasicPrelude
-import GHC.Generics(Generic)
 import Control.Exception (assert)
 
 newtype HackWord16F a = HackWord16F (a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a) 
-  deriving (Generic, Functor)
+  deriving (Functor)
 
 type HackWord16 = HackWord16F Bit
 
@@ -36,7 +33,7 @@ instance Applicative HackWord16F where
 
 instance Show HackWord16 where
     show (HackWord16F (x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16)) =
-        "(" 
+        "HackWord16F (" 
         ++ show x1 ++ ", " ++ show x2 ++ ", " ++ show x3 ++ ", " ++ show x4 ++ ", " ++ show x5 ++ ", " ++
         show x6 ++ ", " ++ show x7 ++ ", " ++ show x8 ++ ", " ++ show x9 ++ ", " ++ show x10 ++ ", " ++
         show x11 ++ ", " ++ show x12 ++ ", " ++ show x13 ++ ", " ++ show x14 ++ ", " ++ show x15 ++ ", " ++
@@ -61,14 +58,6 @@ instance Eq HackWord16 where
         (x13 == y13) &&
         (x14 == y14) &&
         (x15 == y15)
-
--- todo: remove instance of Binary and Bytestring from codebase
-instance Binary a => Binary (HackWord16F a) where
-  put :: HackWord16F a -> Put
-  put = putList . toList
-
-  get :: Get (HackWord16F a)
-  get = toHackWord16 <$> get
 
 -- use isos
 toHackWord16 :: [a] -> HackWord16F a

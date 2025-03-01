@@ -1,6 +1,7 @@
 module Nand2Tetris.TestUtil where
 
 import Nand2Tetris.Types.HackWord16
+import Nand2Tetris.Types.Memory
 import Nand2Tetris.Types.Bit
 import Nand2Tetris.Types.Bus
 import Nand2Tetris.Chips
@@ -33,33 +34,27 @@ one = toHackWord16 $ replicate 15 Zero <> [One] -- 0000 0000 0000 0001
 zeros :: HackWord16
 zeros = toHackWord16 $ replicate 16 Zero
 
-type Ram8State = Bus8Way HackWord16
-randomRam8 :: IO Ram8State
+randomRam8 :: IO RAM8State
 randomRam8 = toBus8 <$> replicateM 8 random16Bits
 
-type Ram64State = Bus8Way Ram8State
-randomRam64 :: IO Ram64State
+randomRam64 :: IO RAM64State
 randomRam64 = toBus8 <$> replicateM 8 randomRam8
 
-type Ram512State = Bus8Way Ram64State
-randomRam512 :: IO Ram512State
+randomRam512 :: IO RAM512State
 randomRam512 = toBus8 <$> replicateM 8 randomRam64
 
-type Ram4KState = Bus8Way Ram512State
-randomRam4K :: IO Ram4KState
+randomRam4K :: IO RAM4kState
 randomRam4K = toBus8 <$> replicateM 8 randomRam512
 
-randomRam8K :: IO (Bus2Way Ram4KState)
+type RAM8kState = Bus2Way RAM4kState
+randomRam8K :: IO RAM8kState
 randomRam8K = toBus2 <$> replicateM 2 randomRam4K
 
-type Ram16KState = Bus4Way Ram4KState
-randomRam16K :: IO Ram16KState
+randomRam16K :: IO RAM16kState
 randomRam16K = toBus4 <$> replicateM 4 randomRam4K
 
-type ROM32kState = Bus2Way Ram16KState
 random32KMemory :: IO ROM32kState
 random32KMemory = toBus2 <$> replicateM 2 randomRam16K 
-
 
 getRandomAluCtrl :: IO (Bit, AluCtrl)
 getRandomAluCtrl = do

@@ -10,6 +10,7 @@ module Nand2Tetris.InputOutput(
 import Nand2Tetris.Types.Bit
 import Nand2Tetris.Types.Bus
 import Nand2Tetris.Types.HackWord16
+import Nand2Tetris.Types.Memory(RAM4kState)
 import Nand2Tetris.Memory
 import Nand2Tetris.Gates
 

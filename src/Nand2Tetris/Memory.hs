@@ -1,11 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Nand2Tetris.Memory (
-    DFF
-   ,Register
-   ,RAM4kState
-   ,RAM16kState
-   ,ROM32kState
-   ,dff
+    dff
    ,bit
 --    , register'
    ,register
@@ -22,22 +17,17 @@ module Nand2Tetris.Memory (
 
 import Nand2Tetris.Types.Bit
 import Nand2Tetris.Types.HackWord16
-import Nand2Tetris.Types.Bus
+import Nand2Tetris.Types.Memory
 import Nand2Tetris.Gates (mux, dMux8Way, dMux8Way16, mux8Way16, dMux4Way, dMux4Way16, muxRam, mux8WayRam, mux4WayRam, dmux, dmux16)
 import Nand2Tetris.Chips (inc16)
 import BasicPrelude ((<$>), fst, snd, ($))
 import Control.Applicative (Applicative, pure, (<*), liftA2)
 import Control.Monad.Trans.State.Strict (State, get, put, runState)
 
-type MemoryOutput = Output16
-
 {- 
     data flip flop
     > out(t) = in (t - 1)
 -}
-type DffStateBit = Bit
-type DFF = State DffStateBit OutputBit
-
 dff :: InputBit -> DFF
 dff input = get <* put input
 
@@ -58,9 +48,6 @@ bit input load = do
     16-bit register
     constructed using 8 single bit registers
 -}
-
-type RegisterState = HackWord16
-type Register = State RegisterState MemoryOutput 
 
 -- type RegisterState' = HackWord16F DFF
 -- type Register' = State RegisterState' MemoryOutput 
@@ -85,11 +72,6 @@ register input16 load = do
     RAM8 - 8 x 16 bit RAM
     constructed using 8 registers
 -}
-
-type RAM8Address = (Bit, Bit, Bit) -- todo: find a type for addresses
-type RAM8State = Bus8Way RegisterState
-type RAM8 = State RAM8State MemoryOutput
-
 ram8 :: RAM8Address -> Input16 -> Load  -> RAM8
 ram8 addr input16 load = do
     ram8State <- get
@@ -107,11 +89,6 @@ ram8 addr input16 load = do
     RAM64 - 64 x 16 bit RAM
     constructed using 8 RAM8
 -}
-
-type RAM64Address = (Bit, Bit, Bit, Bit, Bit, Bit)
-type RAM64State = Bus8Way RAM8State
-type RAM64 = State RAM64State MemoryOutput
-
 ram64 :: RAM64Address -> Input16 -> Load -> RAM64
 ram64 (sel5, sel4, sel3, sel2, sel1, sel0) input16 load = do
     ram64State <- get
@@ -133,10 +110,6 @@ ram64 (sel5, sel4, sel3, sel2, sel1, sel0) input16 load = do
     RAM512 - 512 x 16 bit RAM
     constructed using 8 RAM64
 -}
-type RAM512Address = (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit)
-type RAM512State = Bus8Way RAM64State
-type RAM512 = State RAM512State MemoryOutput
-
 ram512 :: RAM512Address -> Input16 -> Load -> RAM512
 ram512 (sel8, sel7, sel6, sel5, sel4, sel3, sel2, sel1, sel0) input16 load = do
     ram512State <- get
@@ -158,10 +131,6 @@ ram512 (sel8, sel7, sel6, sel5, sel4, sel3, sel2, sel1, sel0) input16 load = do
     RAM4K - 4096 x 16 bit RAM
     constructed using 8 RAM512
 -}
-type RAM4KAddress = (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit)
-type RAM4kState = Bus8Way RAM512State
-type RAM4k = State RAM4kState MemoryOutput
-
 ram4K :: RAM4KAddress -> Input16 -> Load -> RAM4k
 ram4K (sel11, sel10, sel9, sel8, sel7, sel6, sel5, sel4, sel3, sel2, sel1, sel0) input16 load = do
     ram4KState <- get
@@ -184,10 +153,6 @@ ram4K (sel11, sel10, sel9, sel8, sel7, sel6, sel5, sel4, sel3, sel2, sel1, sel0)
     RAM16K - 16384 x 16 bit RAM
     constructed using 4 RAM4ks
 -}
-type RAM16KAddress = (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit)
-type RAM16kState = Bus4Way RAM4kState
-type RAM16k = State RAM16kState MemoryOutput
-
 ram16K :: RAM16KAddress -> Input16 -> Load -> RAM16k
 ram16K (sel13, sel12, sel11, sel10, sel9, sel8, sel7, sel6, sel5, sel4, sel3, sel2, sel1, sel0) input16 load = do
     ram16KState <- get
@@ -235,10 +200,6 @@ pc input16 ctrl = do
     32KB Read Only Memory
     Constructed from two 16KB RAM
 -}
-type ROMAddress = HackWord16 -- 15-bit address
-type ROM32kState = Bus2Way RAM16kState
-type ROM32k = State ROM32kState MemoryOutput
-
 rom32K :: ROMAddress -> ROM32k
 rom32K (HackWord16F (_, addr14, addr13, addr12, addr11, addr10, addr9, addr8, addr7, addr6, addr5, addr4, addr3, addr2, addr1, addr0)) = do
     rom32KState <- get

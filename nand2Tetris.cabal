@@ -33,10 +33,13 @@ library
     Nand2Tetris.Types.Bit
     Nand2Tetris.Types.Bus
     Nand2Tetris.Types.HackWord16
+    Nand2Tetris.Types.Memory
+    Nand2Tetris.HackParser
     Nand2Tetris.Utils
     Nand2Tetris.Assembler
     CLI.Assembler
     CLI.HackComputer
+    CLI.Utils
   other-modules:
       Paths_nand2Tetris
   autogen-modules:
@@ -50,10 +53,9 @@ library
     , basic-prelude
     , transformers
     , random
-    , binary
-    , bytestring
     , directory
     , optparse-applicative
+    , megaparsec
   default-language: Haskell2010
 
 executable nand2Tetris-exe
