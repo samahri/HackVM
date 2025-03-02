@@ -23,17 +23,17 @@ main = do
         Left _ -> putStrLn "no file exists" >> exitFailure
     
     let hackFile = fromEither hackFileEither
-    
-    createHackFile hackFile assemCode
+
+    hackCode <- compileHack assemCode
+    createHackFile hackFile hackCode
     where
         fromEither :: Either String String -> String
         fromEither hackFileEither = case hackFileEither of
             Right hackFile -> hackFile
             Left hackFile -> hackFile
-
-createHackFile :: String -> [String] -> IO ()
--- TODO: use a handle
-createHackFile filepath hackAssem =  IO.writeFile filepath (hackAssemToByteCode . convertToHackAssem $ hackAssem)
+        createHackFile :: String -> BinaryString -> IO ()
+        -- TODO: use a handle
+        createHackFile = IO.writeFile 
 
 readAsmContent :: FilePath -> IO [String]
 readAsmContent asmFile = reverse <$> IO.withFile asmFile IO.ReadMode (readContent [] (:))

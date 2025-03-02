@@ -16,7 +16,7 @@ import Nand2Tetris.Chips
 import Nand2Tetris.Types.Bit
 import Nand2Tetris.Types.Memory
 import Nand2Tetris.Types.HackWord16
-import Nand2Tetris.Assembler
+import Nand2Tetris.HackParser
 import CLI.Utils
 
 main :: IO ()
@@ -74,10 +74,9 @@ loadMemory program = do
 
     pure (memoryState, screenState, rom32kState, (initialARegister, initialDRegister, initialPc), initialCpuInstruction, cpuInput)
 
--- TODO: addProgram reads file and loads it onto memory
 addProgram :: [HackWord16] -> IO ROM32kState
 addProgram program = do
-    initialRom <- zero32KMemory
+    initialRom <- zero32KMemory 
     let updatedRom = addProgramFoldl initialRom program
     pure updatedRom
 
@@ -89,7 +88,6 @@ addProgramFoldl initialRom progData = snd $ foldl foldFunc (pure Zero, initialRo
     where
         foldFunc :: (MemoryAddress, ROM32kState) -> ProgramData -> (MemoryAddress, ROM32kState)
         foldFunc (addr, romState) progData' = (inc16 addr, execState (loadROM32K addr progData') romState)
-        
 
 zeroBit :: IO Bit
 zeroBit = pure Zero

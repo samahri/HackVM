@@ -103,8 +103,8 @@ ram64 (sel5, sel4, sel3, sel2, sel1, sel0) input16 load = do
     put nextCycleOutput
     pure ram8Output
     where
-        ram8MemoryBus = (sel5, sel4, sel3)
-        ram8Selector = (sel2, sel1, sel0)
+        ram8MemoryBus = (sel2, sel1, sel0)
+        ram8Selector = (sel5, sel4, sel3)
 
 {-
     RAM512 - 512 x 16 bit RAM
