@@ -1,5 +1,6 @@
 module CLI.Utils (
     readContent
+    , readContent'
     ,getFileNames
 ) where
 
@@ -8,6 +9,14 @@ import System.IO as IO
 import System.Directory
 import BasicPrelude
 import qualified Data.List as L
+
+readContent' :: String -> Handle -> IO String
+readContent' acc handle = do
+    line <- IO.hGetLine handle
+    isReady <- IO.hIsEOF handle
+    if isReady 
+        then pure (acc <> line)
+        else readContent' (acc <> line) handle
 
 readContent :: a -> (String -> a -> a) -> Handle -> IO a
 readContent acc fn handle = do

@@ -58,7 +58,7 @@ runComputer computer = do
 
 -- TODO: duplicate function from CLI.Assembler
 readBinaryContent :: FilePath -> IO String
-readBinaryContent hackFile = withFile hackFile ReadMode (readContent "" (<>))
+readBinaryContent hackFile = withFile hackFile ReadMode (readContent' "")
 
 loadMemory :: [HackWord16] -> IO ComputerState
 loadMemory program = do
@@ -70,21 +70,21 @@ loadMemory program = do
 
     memoryState <- zero32KMemory
     screenState <- zeroRam16K
-    rom32kState <- addProgram program
+    rom32kState <- loadProgramToROM program
 
     pure (memoryState, screenState, rom32kState, (initialARegister, initialDRegister, initialPc), initialCpuInstruction, cpuInput)
 
-addProgram :: [HackWord16] -> IO ROM32kState
-addProgram program = do
+loadProgramToROM :: [HackWord16] -> IO ROM32kState
+loadProgramToROM program = do
     initialRom <- zero32KMemory 
-    let updatedRom = addProgramFoldl initialRom program
+    let updatedRom = loadProgramToROMFoldl initialRom program
     pure updatedRom
 
 type MemoryAddress = HackWord16
 type ProgramData = HackWord16
 
-addProgramFoldl :: ROM32kState -> [HackWord16] -> ROM32kState
-addProgramFoldl initialRom progData = snd $ foldl foldFunc (pure Zero, initialRom) progData
+loadProgramToROMFoldl :: ROM32kState -> [HackWord16] -> ROM32kState
+loadProgramToROMFoldl initialRom progData = snd $ foldl foldFunc (pure Zero, initialRom) progData
     where
         foldFunc :: (MemoryAddress, ROM32kState) -> ProgramData -> (MemoryAddress, ROM32kState)
         foldFunc (addr, romState) progData' = (inc16 addr, execState (loadROM32K addr progData') romState)

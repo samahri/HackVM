@@ -18,14 +18,14 @@ main :: IO ()
 main = do
     (asmFileEither, hackFileEither) <- getFileNames
     
-    assemCode <- case asmFileEither of
-        Right asmFile -> readAsmContent asmFile
+    assemblyCode <- case asmFileEither of
+        Right asmFile -> readAssemblyFile asmFile
         Left _ -> putStrLn "no file exists" >> exitFailure
     
     let hackFile = fromEither hackFileEither
 
-    hackCode <- compileHack assemCode
-    createHackFile hackFile hackCode
+    hackMachineCode <- assembleToBinaryCode assemblyCode
+    createHackFile hackFile hackMachineCode
     where
         fromEither :: Either String String -> String
         fromEither hackFileEither = case hackFileEither of
@@ -35,5 +35,5 @@ main = do
         -- TODO: use a handle
         createHackFile = IO.writeFile 
 
-readAsmContent :: FilePath -> IO [String]
-readAsmContent asmFile = reverse <$> IO.withFile asmFile IO.ReadMode (readContent [] (:))
+readAssemblyFile :: FilePath -> IO [String]
+readAssemblyFile filePath = reverse <$> IO.withFile filePath IO.ReadMode (readContent [] (:))
