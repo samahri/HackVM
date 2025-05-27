@@ -5,8 +5,9 @@ module Nand2Tetris.Types.Bus (
    ,Bus8Way(..)
 ) where
 
-import BasicPrelude (Eq, Show, show, (++), Functor, )
+import BasicPrelude (Eq, Show, show, (++), Functor, ($), return)
 import Control.Applicative (Applicative, pure, (<*>))
+import Test.QuickCheck
 
 newtype Bus2Way a = Bus2Way (a, a) deriving (Eq, Functor)
 
@@ -44,3 +45,28 @@ instance Applicative Bus8Way where
   (<*>) :: Bus8Way (a -> b) -> Bus8Way a -> Bus8Way b
   (Bus8Way (fn1, fn2, fn3, fn4, fn5, fn6, fn7, fn8)) <*> (Bus8Way (x1, x2, x3, x4, x5, x6, x7, x8)) 
     = Bus8Way (fn1 x1, fn2 x2, fn3 x3, fn4 x4, fn5 x5, fn6 x6, fn7 x7, fn8 x8)
+
+instance Arbitrary a => Arbitrary (Bus4Way a) where
+  arbitrary :: Gen (Bus4Way a)
+  arbitrary = do
+      b0 <- arbitrary
+      b1 <- arbitrary
+      b2 <- arbitrary
+      b3 <- arbitrary
+
+      return $ Bus4Way (b0, b1, b2, b3)
+
+instance Arbitrary a => Arbitrary (Bus8Way a) where
+  arbitrary :: Gen (Bus8Way a)
+  arbitrary = do
+      b0 <- arbitrary
+      b1 <- arbitrary
+      b2 <- arbitrary
+      b3 <- arbitrary
+
+      b4 <- arbitrary
+      b5 <- arbitrary
+      b6 <- arbitrary
+      b7 <- arbitrary
+
+      return $ Bus8Way (b0, b1, b2, b3, b4, b5, b6, b7)

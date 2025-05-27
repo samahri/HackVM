@@ -5,13 +5,12 @@ module Nand2Tetris.Assembler (
 
 import BasicPrelude hiding (read)
 import Text.Read (read)
-import Text.Megaparsec as Megaparsec hiding (State)
+import Text.Megaparsec as Megaparsec hiding (State, label)
 import Text.Megaparsec.Char as Megaparsec
 import qualified Text.Megaparsec.Byte.Lexer as L
 import Data.Void (Void)
 import Data.Either (fromRight)
 import qualified Data.Map.Strict as Map
-import Control.Monad.Trans.Writer
 import Control.Monad.Trans.State
 
 import Nand2Tetris.HackParser
@@ -217,7 +216,7 @@ getLabelSymbolsMap input = do
     where
         func :: (SymbolsMap, Int) -> String -> (SymbolsMap, Int)
         func (sm, n) str = case eitherToMaybe $ runParser (encodeLabelSymbol sm n) "" str of
-            Just (smap, n) -> (smap, n)
+            Just (smap, n') -> (smap, n')
             Nothing -> undefined
 
 encodeLabelSymbol :: SymbolsMap -> Int -> LabelParser
@@ -245,7 +244,7 @@ getVarSymbolsMap input = do
     where
         func :: (SymbolsMap, Int) -> String -> (SymbolsMap, Int)
         func (sm, n) str = case eitherToMaybe $ runParser (encodeVarSymbol sm n) "" str of
-            Just (smap, n) -> (smap, n)
+            Just (smap, n') -> (smap, n')
             Nothing -> undefined
     
 encodeVarSymbol :: SymbolsMap -> Int -> LabelParser

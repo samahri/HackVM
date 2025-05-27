@@ -11,9 +11,9 @@ module Nand2Tetris.Types.HackWord16 (
 ) where
 
 import Nand2Tetris.Types.Bit(Bit(..))
-
 import BasicPrelude
 import Control.Exception (assert)
+import Test.QuickCheck (Arbitrary, Gen, arbitrary)
 
 newtype HackWord16F a = HackWord16F (a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a) 
   deriving (Functor)
@@ -59,6 +59,31 @@ instance Eq HackWord16 where
         (x14 == y14) &&
         (x15 == y15)
 
+instance Arbitrary (HackWord16F Bit) where
+    arbitrary :: Gen (HackWord16F Bit)
+    arbitrary = do
+      b0 <- arbitrary
+      b1 <- arbitrary
+      b2 <- arbitrary
+      b3 <- arbitrary
+
+      b4 <- arbitrary
+      b5 <- arbitrary
+      b6 <- arbitrary
+      b7 <- arbitrary
+
+      b8 <- arbitrary
+      b9 <- arbitrary
+      b10 <- arbitrary
+      b11 <- arbitrary
+      b12 <- arbitrary
+
+      b13 <- arbitrary
+      b14 <- arbitrary
+      b15 <- arbitrary
+
+      return $ HackWord16F (b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15)
+
 -- use isos
 toHackWord16 :: [a] -> HackWord16F a
 toHackWord16 list = assert (length list == 16) $ converttoHackWord16 list
@@ -75,7 +100,7 @@ convertToInt :: HackWord16 -> Int
 convertToInt input = foldBitList (toList input) `mod` 256
 
 foldBitList :: [Bit] -> Int
-foldBitList bitlist = fst (foldr func (0, 0) bitlist)
+foldBitList bitlist = fst (foldr foldFunc (0, 0) bitlist)
     where
-        func :: Bit -> (Int, Int) -> (Int, Int)
-        func b (total, acc) = if b == Zero then (total, acc + 1) else (total + 2^acc, acc + 1)
+        foldFunc :: Bit -> (Int, Int) -> (Int, Int)
+        foldFunc b (total, acc) = if b == Zero then (total, acc + 1) else (total + 2^acc, acc + 1)

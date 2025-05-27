@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Nand2Tetris.Types.Bit(
     Bit(..)
    ,InputBit
@@ -12,6 +13,7 @@ module Nand2Tetris.Types.Bit(
 import CorePrelude
 import System.Random (Random, randomR, random)
 import BasicPrelude(show)
+import Test.QuickCheck
 
 -- TODO learn about Generic typeclass
 data Bit = Zero | One deriving (Eq, Enum, Bounded)
@@ -39,3 +41,48 @@ instance Random Bit where
     random gen = 
         let (n, gen') = randomR (fromEnum (minBound :: Bit), fromEnum (maxBound :: Bit)) gen
         in (toEnum n, gen')
+
+instance Arbitrary Bit where
+    arbitrary :: Gen Bit
+    arbitrary = chooseAny
+    -- arbitrary = elements [Zero, One] -- after Random is removed
+
+instance Arbitrary (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit) where
+    arbitrary = do
+        b0 <- arbitrary
+        b1 <- arbitrary
+        b2 <- arbitrary
+        b3 <- arbitrary
+
+        b4 <- arbitrary
+        b5 <- arbitrary
+        b6 <- arbitrary
+        b7 <- arbitrary
+
+        b8 <- arbitrary
+        b9 <- arbitrary
+        b10 <- arbitrary
+        b11 <- arbitrary
+
+        return (b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11)
+
+instance Arbitrary (Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit, Bit) where
+    arbitrary = do
+        b0 <- arbitrary
+        b1 <- arbitrary
+        b2 <- arbitrary
+        b3 <- arbitrary
+
+        b4 <- arbitrary
+        b5 <- arbitrary
+        b6 <- arbitrary
+        b7 <- arbitrary
+
+        b8 <- arbitrary
+        b9 <- arbitrary
+        b10 <- arbitrary
+        b11 <- arbitrary
+        b12 <- arbitrary
+        b13 <- arbitrary
+
+        return (b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13)
