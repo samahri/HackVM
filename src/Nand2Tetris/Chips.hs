@@ -8,10 +8,13 @@ module Nand2Tetris.Chips (
 ) where
 
 import Nand2Tetris.Gates
+    ( not, and, or, xor, mux, not16, and16, mux4Way16 )
 import Nand2Tetris.Types.HackWord16
+    ( Output16, Input16, HackWord16, toHackWord16, toList )
 import Nand2Tetris.Types.Bit
-import Nand2Tetris.Types.Bus
-import BasicPrelude ((==), ($), error)
+    ( Sum, Carry, OutputBit, InputBit, Bit(..) )
+import Nand2Tetris.Types.Bus ( Bus4Way(Bus4Way) )
+import BasicPrelude ((==), ($), error, Show, Eq)
 import Data.List (reverse, replicate)
 import Data.List.NonEmpty (head, fromList)
 
@@ -25,7 +28,7 @@ type No = Bit
 type Zr = Bit
 type Ng = Bit
 
-data AluCtrl = AluCtrl {zx :: Zx, nx :: Nx, zy :: Zy, ny :: Ny, f :: F, no :: No}
+data AluCtrl = AluCtrl {zx :: Zx, nx :: Nx, zy :: Zy, ny :: Ny, f :: F, no :: No} deriving (Show, Eq)
 
 -- adds two bits
 halfAdder :: (InputBit, InputBit) -> (Carry, Sum)

@@ -3,12 +3,19 @@ module Nand2Tetris.ChipsSpec (
 ) where
 
 import Nand2Tetris.Types.Bit(Bit(One, Zero))
-import Nand2Tetris.Types.HackWord16
-import Nand2Tetris.TestUtil
-import BasicPrelude (($), (<>), pure)
+import Nand2Tetris.Types.HackWord16 ( toHackWord16, toList )
+import Nand2Tetris.TestUtil ( one, zeros )
+import BasicPrelude
+    ( ($), Eq((==)), Applicative(pure), (<>), head, replicate ) 
 import Nand2Tetris.Chips
-import Test.Hspec
-import Data.List (replicate)
+    ( add16,
+      alu,
+      fullAdder,
+      halfAdder,
+      inc16,
+      AluCtrl(no, AluCtrl, zx, nx, zy, ny, f) )
+import Test.Hspec ( context, specify, shouldBe, Spec )
+import Test.QuickCheck ( (===), Testable(property) )
 
 spec :: Spec
 spec = do
@@ -49,6 +56,15 @@ spec = do
             inc16 zeros     `shouldBe` one
             inc16 num255    `shouldBe` num256 -- 0000 0000 1111 1111 -> 0000 0001 0000 0000
             inc16 num       `shouldBe` ones
+
+    specify "ALU" $
+        property $ \x y -> 
+            let
+                zr = if x == zeros then One else Zero
+                ng = head (toList x)
+            in
+                alu (x, y)  (AluCtrl {zx = Zero, nx = Zero, zy = One, ny = One, f = Zero, no = Zero}) === (x, zr, ng)
+
     
     specify "ALU" $ do
         -- a = 0; c = 101010
@@ -60,7 +76,6 @@ spec = do
         --       
         alu (num255, num255) (AluCtrl {zx = One, nx = One,  zy =One, ny = Zero, f = One, no =Zero})   `shouldBe` (ones, Zero, One)        
         
-        alu (num255, zeros)  (AluCtrl {zx = Zero, nx = Zero, zy = One, ny = One, f = Zero, no = Zero})   `shouldBe` (num255, Zero, Zero)  -- zx=0, nx=0, zy=1, ny=1, f=0, no=0 -> x
         
         -- 
         alu (zeros, num255)  (AluCtrl {zx = One, nx = One,  zy =Zero, ny = Zero, f = Zero, no = Zero})   `shouldBe` (num255, Zero, Zero)  -- zx=1, nx=1, zy=0, ny=0, f=0, no=0 -> y
