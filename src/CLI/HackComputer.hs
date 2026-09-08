@@ -47,14 +47,15 @@ runComputer :: (Reset -> HackComputer) -> HackComputer
 runComputer computer = do
     liftIO $ threadDelay 1000
     computer Zero
-    exit <- liftIO $ hReady stdin  -- Check if a key has been pressed
-    if exit
-        then do
-            key <- getChar
-            if key == '\ESC'
-                then pure ()
-                else runComputer computer
-        else runComputer computer
+    shouldExit <- liftIO escapePressed
+    unless shouldExit $ runComputer computer
+    where
+        escapePressed :: IO Bool
+        escapePressed = do
+            ready <- hReady stdin
+            if ready
+                then (== '\ESC') <$> getChar
+                else pure False
 
 -- TODO: duplicate function from CLI.Assembler
 readBinaryContent :: FilePath -> IO String
