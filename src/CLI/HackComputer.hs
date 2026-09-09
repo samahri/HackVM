@@ -7,7 +7,7 @@ import BasicPrelude hiding (putStrLn)
 import Control.Concurrent (threadDelay)
 import Control.Monad.Trans.State.Strict (evalStateT, execState, execStateT)
 import System.IO (hSetBuffering, hSetEcho, stdin, hReady, BufferMode( NoBuffering ), withFile, IOMode(ReadMode), putStrLn)
-import System.Exit(exitFailure)
+import System.Exit(die)
 
 import Nand2Tetris.Utils
 import Nand2Tetris.HackComputer
@@ -25,20 +25,38 @@ main = do
 
     (_, hackFileEither) <- getFileNames
 
-    hackFile <- case hackFileEither of
-        Right hackFile -> pure hackFile
-        Left _ -> putStrLn "no file exists" >> exitFailure
+    hackFile <- either
+        (die . ("no file exists " ++))
+        pure
+        hackFileEither
 
     hackCode <- bytecodeToHackAssem <$> readBinaryContent hackFile
     
     initialComputerState <- loadMemory hackCode
     
+    putStrLn "running the computer..."
+    putStrLn "press ESC to terminate"
     (memoryState, screenState, _, _, _, _) <- execStateT (hackComputer Zero >> runComputer hackComputer) initialComputerState
     
     -- for now, output is only reading from memory location memoryAddressToRead
     let memoryAddressToRead = pure Zero
     memOutput <- evalStateT (mainMemory memoryAddressToRead (pure Zero) Zero) (memoryState, screenState)
-    print memOutput
+    print (input16ToDecimal memOutput)
+
+input16ToDecimal :: Input16 -> Int
+input16ToDecimal = hackWordToDecimal . fmap bitValue
+  where
+    bitValue Zero = 0
+    bitValue One  = 1
+
+    hackWordToDecimal :: HackWord16F Int -> Int
+    hackWordToDecimal
+        (HackWord16F
+            (b15, b14, b13, b12, b11, b10, b9, b8,
+            b7,  b6,  b5,  b4,  b3,  b2,  b1, b0)) =
+        foldl' (\acc bit -> 2 * acc + bit) 0
+            [b15, b14, b13, b12, b11, b10, b9, b8,
+            b7,  b6,  b5,  b4,  b3,  b2,  b1, b0]
 
 setupComputer :: IO ()
 setupComputer = hSetBuffering stdin NoBuffering >> hSetEcho stdin False
@@ -47,14 +65,15 @@ runComputer :: (Reset -> HackComputer) -> HackComputer
 runComputer computer = do
     liftIO $ threadDelay 1000
     computer Zero
-    exit <- liftIO $ hReady stdin  -- Check if a key has been pressed
-    if exit
-        then do
-            key <- getChar
-            if key == '\ESC'
-                then pure ()
-                else runComputer computer
-        else runComputer computer
+    shouldExit <- liftIO escapePressed
+    unless shouldExit $ runComputer computer
+  where
+    escapePressed :: IO Bool
+    escapePressed = do
+        ready <- hReady stdin
+        if ready
+            then (== '\ESC') <$> getChar
+            else pure False
 
 -- TODO: duplicate function from CLI.Assembler
 readBinaryContent :: FilePath -> IO String

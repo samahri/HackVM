@@ -5,7 +5,7 @@ module CLI.Assembler (
 
 import BasicPrelude
 import qualified System.IO as IO
-import System.Exit
+import System.Exit(die)
 
 import CLI.Utils
 import Nand2Tetris.Assembler
@@ -18,22 +18,17 @@ main :: IO ()
 main = do
     (asmFileEither, hackFileEither) <- getFileNames
     
-    assemblyCode <- case asmFileEither of
-        Right asmFile -> readAssemblyFile asmFile
-        Left _ -> putStrLn "no file exists" >> exitFailure
+    asmFile <- either
+        (die . ("no file exists" ++))
+        pure
+        asmFileEither
     
-    let hackFile = fromEither hackFileEither
+    let hackFile = either id id hackFileEither
 
-    hackMachineCode <- assembleToBinaryCode assemblyCode
+    hackMachineCode <- (assemblyToBinaryCode <=< readAssemblyFile) asmFile
     createHackFile hackFile hackMachineCode
     where
-        fromEither :: Either String String -> String
-        fromEither hackFileEither = case hackFileEither of
-            Right hackFile -> hackFile
-            Left hackFile -> hackFile
-        createHackFile :: String -> BinaryString -> IO ()
-        -- TODO: use a handle
-        createHackFile = IO.writeFile 
+        readAssemblyFile :: FilePath -> IO [String]
+        readAssemblyFile filePath = reverse <$> IO.withFile filePath IO.ReadMode (readContent [] (:))
 
-readAssemblyFile :: FilePath -> IO [String]
-readAssemblyFile filePath = reverse <$> IO.withFile filePath IO.ReadMode (readContent [] (:))
+        createHackFile = IO.writeFile 

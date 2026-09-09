@@ -2,19 +2,46 @@ module Nand2Tetris.HackComputerSpec (
     spec
 ) where
 
-import Test.Hspec
+import Test.Hspec ( context, it, pending, shouldBe, Spec )
 
-import Nand2Tetris.Types.Bit
+import Nand2Tetris.Types.Bit ( Bit(..) )
 import Nand2Tetris.Types.HackWord16
+    ( toHackWord16, toList, HackWord16, HackWord16F(HackWord16F) )
 import Nand2Tetris.Gates (mux16)
 import Nand2Tetris.Chips (inc16, alu, AluCtrl(..))
 import Nand2Tetris.Memory (rom32K)
 import Nand2Tetris.TestUtil
-import Nand2Tetris.HackComputer
+    ( randomBit,
+      random16Bits,
+      zeros,
+      randomRam16K,
+      random32KMemory,
+      genAInstruction,
+      genRandomAluCtrl )
+import Nand2Tetris.HackComputer ( cpu, hackComputer, mainMemory )
 
 import BasicPrelude
+    ( ($),
+      Eq((==)),
+      Monad((>>)),
+      Show(show),
+      Applicative(pure),
+      (<$>),
+      head,
+      reverse,
+      (++),
+      (&&),
+      (||),
+      (.) )
 import Control.Monad.Trans.State.Strict (execState, evalState, execStateT, evalStateT)
-import Test.QuickCheck 
+import Test.QuickCheck
+    ( (.&&.),
+      (===),
+      classify,
+      collect,
+      forAll,
+      withMaxSuccess,
+      Testable(property) ) 
 
 spec :: Spec
 spec = do

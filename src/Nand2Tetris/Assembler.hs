@@ -1,17 +1,17 @@
 module Nand2Tetris.Assembler (
-    assembleToBinaryCode
+    assemblyToBinaryCode
     , BinaryString
 ) where
 
 import BasicPrelude hiding (read)
-import Text.Read (read)
 import Text.Megaparsec as Megaparsec hiding (State, label)
 import Text.Megaparsec.Char as Megaparsec
 import qualified Text.Megaparsec.Byte.Lexer as L
+import qualified Text.Megaparsec.Char.Lexer as CL
 import Data.Void (Void)
-import Data.Either (fromRight)
 import qualified Data.Map.Strict as Map
 import Control.Monad.Trans.State
+import System.Exit (die)
 
 import Nand2Tetris.HackParser
 
@@ -20,9 +20,8 @@ import Nand2Tetris.HackParser
 
 type SymbolsMap = Map.Map String BinaryString
 
-assembleToBinaryCode :: [String] -> IO BinaryString
-assembleToBinaryCode input = do 
-    print symbolsMap
+assemblyToBinaryCode :: [String] -> IO BinaryString
+assemblyToBinaryCode input = do 
     concat <$> mapM (assembleLine symbolsMap) input
     where
         symbolsMap :: SymbolsMap
@@ -31,7 +30,11 @@ assembleToBinaryCode input = do
         symbolsMap = execState (foldl (>>) (pure ()) [getLabelSymbolsMap input, getVarSymbolsMap input]) predefinedSymbolsMap
 
 assembleLine :: SymbolsMap -> String -> IO BinaryString
-assembleLine symbolsMap input = fromRight undefined <$> Megaparsec.runParserT (assemblyCodeParser symbolsMap) "" input
+assembleLine symbolsMap input = 
+    either handleFail pure =<< Megaparsec.runParserT (assemblyCodeParser symbolsMap) "" input
+    where
+      handleFail :: Megaparsec.ParseErrorBundle String Void -> IO BinaryString
+      handleFail = die . Megaparsec.errorBundlePretty
 
 -- Parser Code
 type Parser = ParsecT Void String IO
@@ -67,10 +70,11 @@ parseAInstruction symbolsMap = Megaparsec.try (parseVariable symbolsMap) <|> par
 parseConstant :: Parser BinaryString
 parseConstant = do
     _ <- Megaparsec.char '@'
-    num <- Megaparsec.some Megaparsec.digitChar
-    -- todo: assert that num is 0–32767
+    num <- (CL.decimal :: Parser Integer)
+    when (num > 32767) $
+        fail "Constant must be between 0 and 32767"
     _ <- Megaparsec.optional parseComment
-    pure (numToBinaryString (read num))
+    pure (numToBinaryString (fromInteger num))
 
 -- <variable> =  ^\s*@[a-zA-Z]+\s*\n^
 parseVariable :: SymbolsMap -> Parser BinaryString
@@ -117,13 +121,13 @@ parseDestination = Megaparsec.try parseNonNullDest <|> pure ('0', '0', '0')
         parseNonNullDest :: Parser (Char, Char, Char)
         parseNonNullDest = do 
             (d0, d1, d2) <- Megaparsec.choice [
-                    ('0', '0', '1') <$ Megaparsec.char 'M',
-                    ('0', '1', '0') <$ Megaparsec.char 'D',
-                    ('0', '1', '1') <$ Megaparsec.string "DM",
-                    ('1', '0', '0') <$ Megaparsec.char 'A',
-                    ('1', '0', '1') <$ Megaparsec.string "AM",
-                    ('1', '1', '0') <$ Megaparsec.string "AD",
-                    ('1', '1', '1') <$ Megaparsec.string "ADM"
+                    ('0', '0', '1') <$ Megaparsec.char    'M',
+                    ('0', '1', '0') <$ Megaparsec.char    'D',
+                    ('0', '1', '1') <$ Megaparsec.string  "DM",
+                    ('1', '0', '0') <$ Megaparsec.char    'A',
+                    ('1', '0', '1') <$ Megaparsec.string  "AM",
+                    ('1', '1', '0') <$ Megaparsec.string  "AD",
+                    ('1', '1', '1') <$ Megaparsec.string  "ADM"
                 ]
             _ <- Megaparsec.char '='
             pure (d0, d1, d2)
@@ -182,23 +186,23 @@ numToBinaryString = padZeros . toBinaryString . toBinary
 -- Symbols Map
 predefinedSymbolsMap :: SymbolsMap
 predefinedSymbolsMap = Map.fromList [
-    ("R0",  "0000000000000000"),
-    ("R1",  "0000000000000001"),
-    ("R2",  "0000000000000010"),
-    ("R3",  "0000000000000011"),
-    ("R4",  "0000000000000100"),
-    ("R5",  "0000000000000101"),
-    ("R6",  "0000000000000110"),
-    ("R7",  "0000000000000111"),
-    ("R8",  "0000000000001000"),
-    ("R9",  "0000000000001001"),
-    ("R10", "0000000000001010"),
-    ("R11", "0000000000001011"),
-    ("R12", "0000000000001100"),
-    ("R13", "0000000000001101"),
-    ("R14", "0000000000001110"),
-    ("R15", "0000000000001111"),
-    ("END", "1111111111111111")
+      ("R0",  "0000000000000000"),
+      ("R1",  "0000000000000001"),
+      ("R2",  "0000000000000010"),
+      ("R3",  "0000000000000011"),
+      ("R4",  "0000000000000100"),
+      ("R5",  "0000000000000101"),
+      ("R6",  "0000000000000110"),
+      ("R7",  "0000000000000111"),
+      ("R8",  "0000000000001000"),
+      ("R9",  "0000000000001001"),
+      ("R10", "0000000000001010"),
+      ("R11", "0000000000001011"),
+      ("R12", "0000000000001100"),
+      ("R13", "0000000000001101"),
+      ("R14", "0000000000001110"),
+      ("R15", "0000000000001111"),
+      ("END", "1111111111111111")
     ]
 
 -- type LabelParser = ParsecT Void Strin(Writer SymbolsMap)
